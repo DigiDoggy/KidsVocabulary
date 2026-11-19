@@ -42,6 +42,7 @@ coverage/
 
 # --- Backend ---
 backend/target/
+.jqwik-database
 
 # --- Frontend ---
 frontend/node_modules/

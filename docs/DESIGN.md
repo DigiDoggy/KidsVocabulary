@@ -536,13 +536,16 @@ planCarryOver(month, weekLimit):               // when a week draft is created
 
 ### 3.8 Unit test coverage (core — 100% lines and branches, JaCoCo gate)
 
+Implemented in `com.kidsvocab.core` (`text`, `scoring`, `training`, `week`, `month`); `mvn test` fails if coverage drops below 100%.
+
 - `ScoringPolicyTest` — the whole table in 3.2, parameterised.
-- `AnswerCheckerTest` — case, whitespace, apostrophes, synonyms, languages.
-- `HintTest` — mask, spaces, `len − 1` limit, reset in the next round, sticky flag.
-- `TrainingEngineTest` — scenarios: everything right in round 1; mistakes → rounds; "problematic" exactly on the 3rd mistake; idempotency; empty answer; week expiry.
+- `AnswerNormalizerTest`, `WordCardTest` — case, whitespace, apostrophes, dashes, Unicode, synonyms.
+- `HintMaskTest` — mask, separators, `len − 1` limit.
+- `TrainingSessionTest` — everything right in round 1; mistakes → rounds; "problematic" exactly on the 3rd mistake; hints reset per round with a sticky flag; idempotency; empty answer; conflicts; closing.
 - `RoundArrangerTest` — "not at the edges and not adjacent" property (property-based, jqwik) + every relaxation branch.
-- `WeekFinalizerTest`, `WeekExpiryTest` — rule 8: solved words keep points, unsolved and unanswered get 0; session never started.
-- `MonthReportCalculatorTest` — boundaries 59.99/60/79.99/80, empty weeks, BigDecimal precision.
+- `WeekSummarizerTest` — rule 8: solved words keep points, unsolved and unanswered get 0; session never started. Completed and expired weeks share one rule.
+- `WeekCalendarTest` — Mon–Sun boundaries, deadline in the parent's zone, DST.
+- `MonthReportCalculatorTest` — boundaries 59.99/60/79.99/80, exact vs displayed percentage, carry-over precedence.
 - `CarryOverPlannerTest` — distribution, cap, overflow.
 
 ---
