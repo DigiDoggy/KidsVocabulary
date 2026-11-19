@@ -38,3 +38,12 @@ app:
   ai:
     provider: ${AI_PROVIDER:none}
     api-key: ${AI_API_KEY:}
+  security:
+    # At least 32 bytes. If empty, a random key is generated at startup (tokens do not survive a restart).
+    jwt-secret: ${JWT_SECRET:}
+    access-token-ttl: 15m
+    refresh-token-ttl: 30d
+    # true behind HTTPS; false for plain-HTTP local development
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+    pin-max-attempts: 5
+    pin-lock-duration: 5m
