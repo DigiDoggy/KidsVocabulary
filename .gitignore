@@ -1,0 +1,49 @@
+# --- Secrets and local environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+secrets/
+credentials*.json
+
+# --- Local-only notes and AI assistant configuration ---
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+.claude/
+.mcp.json
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorrules
+.aider*
+.continue/
+.codex/
+.github/copilot-instructions.md
+*.local.md
+notes/
+scratch/
+
+# --- OS / IDE ---
+.DS_Store
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# --- Logs and reports ---
+*.log
+logs/
+coverage/
+
+# --- Backend ---
+backend/target/
+
+# --- Frontend ---
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo

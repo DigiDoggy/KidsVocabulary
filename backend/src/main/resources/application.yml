@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: kidsvocab
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/kidsvocab}
+    username: ${DB_USER:kidsvocab}
+    password: ${DB_PASSWORD:kidsvocab}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  training:
+    show-correct-answer-seconds: 5
+  ai:
+    provider: ${AI_PROVIDER:none}
+    api-key: ${AI_API_KEY:}
