@@ -13,6 +13,8 @@ import com.kidsvocab.domain.account.ParentAccountRepository;
 import com.kidsvocab.domain.child.Child;
 import com.kidsvocab.domain.study.CarryOver;
 import com.kidsvocab.domain.study.CarryOverRepository;
+import com.kidsvocab.domain.study.SessionRecord;
+import com.kidsvocab.domain.study.SessionRecordRepository;
 import com.kidsvocab.domain.study.ChildWordHistory;
 import com.kidsvocab.domain.study.StudyMonth;
 import com.kidsvocab.domain.study.StudyMonthRepository;
@@ -48,11 +50,13 @@ public class WeekLifecycleService {
     private final ChildWordHistory history;
     private final ParentAccountRepository accounts;
     private final FirstPassProgress firstPass;
+    private final SessionRecordRepository sessions;
     private final Clock clock;
 
     public WeekLifecycleService(StudyWeekRepository weeks, WeekWordRepository words, StudyMonthRepository months,
                                 CarryOverRepository carryOvers, ChildWordHistory history,
-                                ParentAccountRepository accounts, FirstPassProgress firstPass, Clock clock) {
+                                ParentAccountRepository accounts, FirstPassProgress firstPass,
+                                SessionRecordRepository sessions, Clock clock) {
         this.weeks = weeks;
         this.words = words;
         this.months = months;
@@ -60,6 +64,7 @@ public class WeekLifecycleService {
         this.history = history;
         this.accounts = accounts;
         this.firstPass = firstPass;
+        this.sessions = sessions;
         this.clock = clock;
     }
 
@@ -124,6 +129,7 @@ public class WeekLifecycleService {
             history.record(week.getChildId(), word.getConceptId(), r.outcome(), week.getId());
         }
         week.close(closedStatus, result.points(), result.maxPoints(), clock.instant());
+        sessions.findByWeekIdAndKind(week.getId(), SessionRecord.Kind.FIRST_PASS).ifPresent(SessionRecord::closeIfOpen);
         weeks.flush();
         if (week.getWeekIndex() == StudyMonth.WEEKS) {
             closeMonth(months.findById(week.getMonthId()).orElseThrow());

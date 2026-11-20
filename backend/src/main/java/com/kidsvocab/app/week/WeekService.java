@@ -256,7 +256,7 @@ public class WeekService {
         lifecycle.refresh(child);
         LocalDate thisMonday = WeekCalendar.weekStart(lifecycle.today(child));
         boolean alreadyDone = child.getLastAutoDraft() != null && !child.getLastAutoDraft().isBefore(thisMonday);
-        boolean hasStudied = months.findByChildIdOrderBySeqNoDesc(child.getId()).stream().findAny().isPresent();
+        boolean hasStudied = weeks.existsByChildIdAndMonthIdIsNotNull(child.getId());
         if (alreadyDone || !hasStudied
                 || weeks.existsByChildIdAndStatusIn(child.getId(), PENDING)
                 || weeks.existsByChildIdAndStartDateAndStatusNot(child.getId(), thisMonday, WeekStatus.DRAFT)) {

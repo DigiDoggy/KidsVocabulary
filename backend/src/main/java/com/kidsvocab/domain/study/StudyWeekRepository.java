@@ -21,5 +21,8 @@ public interface StudyWeekRepository extends JpaRepository<StudyWeek, Long> {
 
     long countByMonthId(Long monthId);
 
+    /** True once the child has had at least one running week. */
+    boolean existsByChildIdAndMonthIdIsNotNull(Long childId);
+
     Optional<StudyWeek> findFirstByChildIdAndStatusIn(Long childId, Collection<WeekStatus> statuses);
 }

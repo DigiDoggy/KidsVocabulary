@@ -97,6 +97,7 @@ The authoritative schema lives in the Flyway migrations under `backend/src/main/
 - `V1__language.sql` — language reference table (`ru`, `et`, `en`).
 - `V2__schema.sql` — accounts, children, refresh tokens, dictionary (`concept`, `word_form`), months, weeks, week words, training sessions, rounds, attempts, word history, carry-over queue, AI request log.
 - `V4__week_planning.sql` — week month/index assigned on activation, one prepared week per child, carry-over placement tracking, automatic draft marker.
+- `V5__training_events.sql` — training sessions as an event log (`training_event`), replacing the unused per-round snapshot tables.
 - `V3__seed_dictionary.sql` — a starter dictionary of ~275 concepts with primary forms in en/ru/et and accepted English variants (mum/mom, grey/gray), grouped by topic (animals, food, family, school, colours, numbers, home, clothes, body, nature, transport, toys, actions, describing words). Prompts are unambiguous within each native language; words spelled the same in the native language and English are excluded. These rules are checked by `SeedDictionaryIntegrationTest`.
 
 Notable details:
@@ -148,11 +149,12 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 | POST | `/weeks/{weekId}/suggest` | `{topic?}` fill up to `wordCount` (AI → dictionary fallback) |
 | POST | `/weeks/{weekId}/launch` | full set required; a week for this Monday → `ACTIVE`, for next Monday → `SCHEDULED` |
 | POST | `/weeks/{weekId}/unschedule` | `SCHEDULED` → `DRAFT` |
-| GET | `/children/{id}/months` | list of months |
-| GET | `/months/{monthId}` | month progress (current points, weeks) |
-| PUT | `/months/{monthId}/reward` | `{text}` reward |
-| GET | `/months/{monthId}/report` | final report (after closing) |
-| GET | `/weeks/{weekId}/stats` | per word: attempts, hints, problematic |
+| GET | `/children/{id}/home` | the child's home view (same as `/me/home`) |
+| GET | `/children/{id}/months` | list of months with status, result and reward |
+| PUT | `/children/{id}/months/current/reward` | `{reward}` for the current month (creates it if the child has not started yet) |
+| GET | `/months/{monthId}` | month progress: weeks, points of closed weeks |
+| GET | `/months/{monthId}/report` | final report (after closing): totals, result, reward if earned, weekly stats, hard and unlearned words with texts |
+| GET | `/weeks/{weekId}/stats` | per word: wrong rounds, solved round, hint, problematic, points, outcome |
 | GET | `/dictionary/topics` | topics for suggestions |
 
 **Week planning rules** (implemented in `WeekService` / `WeekLifecycleService`):
@@ -162,22 +164,24 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 - Carried-over words are placed when the draft is created (quota from `CarryOverPlanner`) and cannot be removed. If a month closes after next week's draft was prepared, its carry-overs go into the remaining weeks of the new month.
 - Suggestions never repeat the child's word history, words of open weeks, words queued for carry-over or words of the current month; prompts and primary answers stay unique within a set. Level A0 gets difficulty ≤ 2.
 - The set is frozen on launch; manual words of a draft are copied with their accepted answers.
-- Lifecycle runs on every week request for that child and every 15 minutes (`app.scheduling.*`): expire overdue weeks, activate scheduled ones, close the month after week 4 (report snapshot + carry-over queue). Until training sessions are stored, an expired week counts every word as not started.
+- Lifecycle runs on every week request for that child and every 15 minutes (`app.scheduling.*`): expire overdue weeks, activate scheduled ones, close the month after week 4 (report snapshot + carry-over queue). An expired week keeps the points of words already solved in the first pass; the rest get 0 (rule 8).
 - Automatic draft: once per calendar week, only for children who have studied before, only if nothing is prepared or running this week (`child.last_auto_draft` prevents re-creating a deleted draft).
 - A child's languages cannot change while a week is prepared or running.
 
-### 2.3 Child (mode = CHILD, or PARENT for viewing)
+### 2.3 Training (mode = CHILD, or PARENT of the child)
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/me/home` | current week, week/month points, status, whether training is available |
-| POST | `/weeks/{weekId}/sessions` | start or resume. If the first pass is unfinished it is returned, otherwise a `PRACTICE` session is created |
-| GET | `/sessions/{id}/current` | current item: `{weekWordId, roundNo, position, prompt, answerLength, hintMask, roundSize, remainingInRound, roundsTotalSoFar}` |
-| POST | `/sessions/{id}/answers` | `{weekWordId, roundNo, answer}` → `{correct, correctAnswer?, pointsPreview?, becameProblematic, roundFinished, sessionFinished, next?}` |
-| POST | `/sessions/{id}/hint` | `{weekWordId, roundNo}` → `{hintMask: "c _ _"}` |
-| GET | `/sessions/{id}/summary` | result: points (FIRST_PASS), words by outcome |
+| GET | `/me/home` | (CHILD) child info, this week's set with points (final or so far), current month: closed weeks, points, reward |
+| POST | `/weeks/{weekId}/sessions` | start or resume: the first pass while the week is active and not passed, otherwise practice (`counts=false`) |
+| GET | `/sessions/{id}` | session state: `current` item `{wordId, round, position, prompt, answerLength, hintMask, hintAvailable, roundSize, remainingInRound}`, points so far, per-word states |
+| POST | `/sessions/{id}/answers` | `{weekWordId, round, answer}` → `{verdict, correctAnswer, showCorrectAnswerFor, becameProblematic, roundFinished, sessionFinished, next, points}` |
+| POST | `/sessions/{id}/hint` | `{weekWordId, round}` → `{hintMask, hintAvailable}` |
 
-`answers` is idempotent on `(session, weekWord, round)`: a repeated submission returns the stored result. Answering a word that is not current → `409`.
+- Answers are idempotent on `(session, weekWord, round)`: a retried request returns the stored result, even after the session finished. Answering a word that is not current → `409 CONFLICT`; a finished or expired session → `409 SESSION_CLOSED`; a blank answer → `IGNORED`.
+- Sessions are stored as an append-only event log (`training_event`: answers and hints). The engine is deterministic for a stored seed, so replaying the events restores the exact state, including revealed hint letters. A unique `(session, seq)` stops two tabs from writing at once.
+- Finishing the first pass closes the week immediately (`COMPLETED`); after week 4 the month report is built at once.
+- The response never contains the answer of the current word, only its hint mask.
 
 ---
 

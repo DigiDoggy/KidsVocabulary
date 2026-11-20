@@ -11,7 +11,9 @@ public class AppException extends RuntimeException {
         INVALID_REFRESH_TOKEN,
         INVALID_PIN,
         PIN_LOCKED,
-        FORBIDDEN
+        FORBIDDEN,
+        /** The training session is already completed or closed (e.g. the week ended). */
+        SESSION_CLOSED
     }
 
     private final Code code;

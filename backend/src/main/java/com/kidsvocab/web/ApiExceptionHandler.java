@@ -45,7 +45,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return switch (code) {
             case VALIDATION -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case CONFLICT -> HttpStatus.CONFLICT;
+            case CONFLICT, SESSION_CLOSED -> HttpStatus.CONFLICT;
             case INVALID_CREDENTIALS, INVALID_REFRESH_TOKEN -> HttpStatus.UNAUTHORIZED;
             case INVALID_PIN, FORBIDDEN -> HttpStatus.FORBIDDEN;
             case PIN_LOCKED -> HttpStatus.TOO_MANY_REQUESTS;
