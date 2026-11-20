@@ -75,7 +75,8 @@
     "addFirst": "Add the first child",
     "empty": "No children yet. Add a profile to start preparing word sets.",
     "age_one": "{count} year",
-    "age_other": "{count} years"
+    "age_other": "{count} years",
+    "childMode": "Child mode"
   },
   "levels": {
     "A0": "beginner",
@@ -264,14 +265,53 @@
     "newPin": "New PIN",
     "pinChanged": "The PIN has been changed."
   },
-  "childMode": {
+  "picker": {
+    "title": "Who is training?",
+    "hint": "To come back to the parent mode you will need the PIN."
+  },
+  "kid": {
     "parentMode": "Parent",
-    "hello": "Hi, {name}!",
-    "weekReady_one": "This week you have {count} word to learn.",
-    "weekReady_other": "This week you have {count} words to learn.",
-    "noWeek": "There are no words for this week yet.",
-    "trainingSoon": "Training is coming soon.",
     "pinTitle": "Enter the parent PIN",
-    "unlock": "Continue"
+    "pinLabel": "PIN",
+    "unlock": "Continue",
+    "hello": "Hi, {name}!",
+    "noWeek": "There are no words for this week yet. Ask your parents to prepare them.",
+    "weekReady_one": "{count} new word is waiting for you this week.",
+    "weekReady_other": "{count} new words are waiting for you this week.",
+    "weekInProgress_one": "You have started: {count} word this week.",
+    "weekInProgress_other": "You have started: {count} words this week.",
+    "weekDone": "You have finished this week. Well done!",
+    "weekOver": "This week is over.",
+    "start": "Start",
+    "continue": "Continue",
+    "practice": "Practise again",
+    "practiceNote": "This is practice: the stars do not change.",
+    "points": "{points} of {max}",
+    "weeksDone": "Weeks done: {n} of 4",
+    "reward": "Goal: {reward}",
+    "praise1": "Correct!",
+    "praise2": "Great job!",
+    "praise3": "Well done!",
+    "closedTitle": "The week is over",
+    "closedText": "The words you spelled correctly have been counted.",
+    "roundDone": "Round {n} done!",
+    "roundNext_one": "{count} word left. One more go!",
+    "roundNext_other": "{count} words left. One more go!",
+    "go": "Let's go",
+    "roundLabel": "Round {n}",
+    "wordOf": "Word {n} of {total}",
+    "correctIs": "The right spelling:",
+    "youWrote": "You wrote:",
+    "answerLabel": "Your answer",
+    "check": "Check",
+    "hint": "Hint",
+    "tryAgain": "Press \"Check\" again.",
+    "lettersLabel_one": "{count} letter",
+    "lettersLabel_other": "{count} letters",
+    "finishedTitle": "All words are done!",
+    "firstTry_one": "{count} of {total} spelled right the first time.",
+    "firstTry_other": "{count} of {total} spelled right the first time.",
+    "counts": "These stars count towards the month.",
+    "home": "Home"
   }
 }

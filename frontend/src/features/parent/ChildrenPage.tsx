@@ -14,9 +14,16 @@ export function ChildrenPage() {
     <>
       <div className="page-head">
         <h1>{t('children.title')}</h1>
-        <Link className="btn btn--primary" to="/children/new">
-          {t('children.add')}
-        </Link>
+        <div className="page-head__actions">
+          {children.data && children.data.length > 0 && (
+            <Link className="btn btn--accent" to="/pick">
+              {t('children.childMode')}
+            </Link>
+          )}
+          <Link className="btn btn--primary" to="/children/new">
+            {t('children.add')}
+          </Link>
+        </div>
       </div>
       <ErrorMessage error={children.error} />
       {children.loading && !children.data && <Spinner />}

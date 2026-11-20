@@ -1,5 +1,6 @@
 import { parseIsoDate, translate } from './I18nProvider';
 import en from './locales/en.json';
+import et from './locales/et.json';
 import ru from './locales/ru.json';
 
 type Tree = { [key: string]: string | Tree };
@@ -29,6 +30,13 @@ describe('translate', () => {
 
   it('has the same keys in every catalog', () => {
     expect(new Set(keys(ru))).toEqual(new Set(keys(en)));
+  });
+
+  it('translates the whole child UI into Estonian and nothing unknown', () => {
+    const english = new Set(keys(en));
+    const estonian = keys(et);
+    expect(estonian.filter((k) => !english.has(k))).toEqual([]);
+    expect(keys(en).filter((k) => k.startsWith('kid.') && !estonian.includes(k))).toEqual([]);
   });
 });
 

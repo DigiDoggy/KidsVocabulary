@@ -248,6 +248,21 @@ describe('App', () => {
     expect(screen.getByText('Not learned (0)')).toBeInTheDocument();
   });
 
+  it('lets the parent pick who is training', async () => {
+    const api = mockApi({
+      ...signedInParent,
+      'GET /children': [child],
+      'POST /auth/switch-to-child/7': childTokens(7),
+      'GET /me/home': { child, week: null, month: null },
+    });
+    renderAt('/pick');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Mari/ }));
+
+    expect(await screen.findByText('Tere, Mari!')).toBeInTheDocument();
+    expect(api.called('POST', '/auth/switch-to-child/7')).toHaveLength(1);
+  });
+
   describe('child mode', () => {
     it('hands over to the child and returns with the PIN', async () => {
       const api = mockApi({
@@ -265,15 +280,17 @@ describe('App', () => {
       renderAt('/children/7');
 
       await userEvent.click(await screen.findByRole('button', { name: 'Hand over to the child' }));
-      expect(await screen.findByText('Hi, Mari!')).toBeInTheDocument();
+      // child mode speaks the child's native language (Estonian here)
+      expect(await screen.findByText('Tere, Mari!')).toBeInTheDocument();
+      expect(document.documentElement.lang).toBe('et');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Parent' }));
-      await userEvent.type(screen.getByLabelText('Parent PIN'), '1111');
-      await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
-      expect(await screen.findByText('Wrong PIN.')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /Lapsevanem/ }));
+      await userEvent.type(screen.getByLabelText('PIN'), '1111');
+      await userEvent.click(screen.getByRole('button', { name: 'Jätka' }));
+      expect(await screen.findByText('Vale PIN.')).toBeInTheDocument();
 
-      await userEvent.type(screen.getByLabelText('Parent PIN'), '2468');
-      await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      await userEvent.type(screen.getByLabelText('PIN'), '2468');
+      await userEvent.click(screen.getByRole('button', { name: 'Jätka' }));
 
       expect(await screen.findByRole('heading', { name: 'Mari' })).toBeInTheDocument();
       expect(api.called('POST', '/auth/switch-to-parent')).toHaveLength(2);
@@ -283,7 +300,7 @@ describe('App', () => {
       mockApi({ 'POST /auth/refresh': childTokens(7), 'GET /me/home': { child, week: null, month: null } });
       renderAt('/children/7');
 
-      expect(await screen.findByText('Hi, Mari!')).toBeInTheDocument();
+      expect(await screen.findByText('Tere, Mari!')).toBeInTheDocument();
       expect(window.location.pathname).toBe('/child');
     });
   });

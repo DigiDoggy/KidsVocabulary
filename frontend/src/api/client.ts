@@ -1,5 +1,6 @@
 import { acceptTokens, clearSession, request, type Session } from './http';
 import type {
+  AnswerResponse,
   AppInfo,
   Child,
   ChildData,
@@ -8,7 +9,9 @@ import type {
   MonthProgress,
   MonthReport,
   MonthSummary,
+  HintResponse,
   TokenResponse,
+  TrainingSession,
   Week,
   WeekSummary,
   WordStat,
@@ -99,3 +102,13 @@ export const setReward = (childId: number, reward: string) =>
   put<MonthSummary>(`/children/${childId}/months/current/reward`, { reward });
 export const getMonth = (monthId: number) => get<MonthProgress>(`/months/${monthId}`);
 export const getMonthReport = (monthId: number) => get<MonthReport>(`/months/${monthId}/report`);
+
+// --- training --------------------------------------------------------------------------------------
+
+/** Starts the first pass (or resumes it); after it, a practice session that does not count. */
+export const startSession = (weekId: number) => post<TrainingSession>(`/weeks/${weekId}/sessions`);
+export const getSession = (sessionId: number) => get<TrainingSession>(`/sessions/${sessionId}`);
+export const submitAnswer = (sessionId: number, weekWordId: number, round: number, answer: string) =>
+  post<AnswerResponse>(`/sessions/${sessionId}/answers`, { weekWordId, round, answer });
+export const requestHint = (sessionId: number, weekWordId: number, round: number) =>
+  post<HintResponse>(`/sessions/${sessionId}/hint`, { weekWordId, round });

@@ -1,36 +1,52 @@
 import { useState, type FormEvent } from 'react';
+import { Outlet, useOutletContext } from 'react-router-dom';
 import { myHome, switchToParent } from '../../api/client';
 import { ApiError } from '../../api/http';
+import type { Home } from '../../api/types';
 import { ErrorMessage, Modal, Spinner, useAction } from '../../components/ui';
-import { useI18n } from '../../i18n/I18nProvider';
+import { I18nProvider, useI18n, type UiLanguage } from '../../i18n/I18nProvider';
 import { useLoad } from '../../lib/useLoad';
 
-/** Child mode shell. The training screens arrive with the child UI; for now it shows the week and the way back. */
-export function ChildModePage() {
-  const { t } = useI18n();
-  const home = useLoad(myHome, []);
-  const [pinOpen, setPinOpen] = useState(false);
+export interface ChildContext {
+  home: Home;
+  reloadHome: () => void;
+}
 
+export function useChildContext(): ChildContext {
+  return useOutletContext<ChildContext>();
+}
+
+const CHILD_LANGUAGES: UiLanguage[] = ['ru', 'et', 'en'];
+
+function childLanguage(nativeLang: string): UiLanguage {
+  return CHILD_LANGUAGES.includes(nativeLang as UiLanguage) ? (nativeLang as UiLanguage) : 'en';
+}
+
+/** Child mode: everything is shown in the child's native language; leaving it needs the parent PIN. */
+export function ChildLayout() {
+  const home = useLoad(myHome, []);
+
+  if (!home.data) {
+    return <main className="kid">{home.error ? <ErrorMessage error={home.error} /> : <Spinner />}</main>;
+  }
   return (
-    <main className="child-shell">
-      <header className="child-shell__top">
-        <button type="button" className="btn btn--ghost btn--small" onClick={() => setPinOpen(true)}>
-          {t('childMode.parentMode')}
+    <I18nProvider fixedLang={childLanguage(home.data.child.nativeLang)}>
+      <ChildShell home={home.data} reloadHome={home.reload} />
+    </I18nProvider>
+  );
+}
+
+function ChildShell({ home, reloadHome }: ChildContext) {
+  const { t } = useI18n();
+  const [pinOpen, setPinOpen] = useState(false);
+  return (
+    <main className="kid">
+      <header className="kid__top">
+        <button type="button" className="btn btn--ghost btn--small kid__parent" onClick={() => setPinOpen(true)}>
+          <span aria-hidden="true">🔒</span> {t('kid.parentMode')}
         </button>
       </header>
-      {home.error ? (
-        <ErrorMessage error={home.error} />
-      ) : !home.data ? (
-        <Spinner />
-      ) : (
-        <div className="child-shell__body">
-          <h1 className="child-shell__hello">{t('childMode.hello', { name: home.data.child.name })}</h1>
-          <p className="child-shell__text">
-            {home.data.week ? t('childMode.weekReady', { count: home.data.week.wordCount }) : t('childMode.noWeek')}
-          </p>
-          <p className="muted">{t('childMode.trainingSoon')}</p>
-        </div>
-      )}
+      <Outlet context={{ home, reloadHome } satisfies ChildContext} />
       {pinOpen && <PinDialog onClose={() => setPinOpen(false)} />}
     </main>
   );
@@ -52,7 +68,7 @@ export function PinDialog({ onClose }: { onClose: () => void }) {
 
   const locked = error instanceof ApiError && error.code === 'PIN_LOCKED';
   return (
-    <Modal title={t('childMode.pinTitle')} onClose={onClose}>
+    <Modal title={t('kid.pinTitle')} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <input
           className="pin-input"
@@ -61,14 +77,14 @@ export function PinDialog({ onClose }: { onClose: () => void }) {
           autoComplete="off"
           autoFocus
           maxLength={6}
-          aria-label={t('auth.pin')}
+          aria-label={t('kid.pinLabel')}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
         />
         <ErrorMessage error={error} />
         <div className="form__actions">
           <button className="btn btn--primary" disabled={busy || locked || pin.length < 4}>
-            {t('childMode.unlock')}
+            {t('kid.unlock')}
           </button>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             {t('common.cancel')}

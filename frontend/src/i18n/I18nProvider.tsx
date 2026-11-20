@@ -1,13 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import en from './locales/en.json';
+import et from './locales/et.json';
 import ru from './locales/ru.json';
 
 type Messages = { [key: string]: string | Messages };
 
+/** Languages the parent can pick for the parent UI. */
 export const LANGUAGES = ['ru', 'en'] as const;
-export type UiLanguage = (typeof LANGUAGES)[number];
+/** Every catalog; Estonian covers the child UI for now, the rest falls back to English. */
+export type UiLanguage = (typeof LANGUAGES)[number] | 'et';
 
-const CATALOGS: Record<UiLanguage, Messages> = { en, ru };
+const CATALOGS: Record<UiLanguage, Messages> = { en, ru, et };
 const FALLBACK: UiLanguage = 'en';
 const DEFAULT_LANG: UiLanguage = 'ru';
 const STORAGE_KEY = 'kidsvocab.lang';
@@ -74,8 +77,21 @@ function readStoredLang(): UiLanguage | null {
 
 const I18nContext = createContext<I18n | null>(null);
 
-export function I18nProvider({ children, initialLang }: { children: ReactNode; initialLang?: UiLanguage }) {
-  const [lang, setLangState] = useState<UiLanguage>(() => initialLang ?? readStoredLang() ?? DEFAULT_LANG);
+/**
+ * @param fixedLang a language that cannot be changed and is not remembered (the child area uses the
+ *                  child's native language)
+ */
+export function I18nProvider({
+  children,
+  initialLang,
+  fixedLang,
+}: {
+  children: ReactNode;
+  initialLang?: UiLanguage;
+  fixedLang?: UiLanguage;
+}) {
+  const [chosen, setLangState] = useState<UiLanguage>(() => initialLang ?? readStoredLang() ?? DEFAULT_LANG);
+  const lang = fixedLang ?? chosen;
 
   const setLang = useCallback((next: UiLanguage) => {
     setLangState(next);
@@ -87,7 +103,11 @@ export function I18nProvider({ children, initialLang }: { children: ReactNode; i
   }, []);
 
   useEffect(() => {
+    const previous = document.documentElement.lang;
     document.documentElement.lang = lang;
+    return () => {
+      document.documentElement.lang = previous;
+    };
   }, [lang]);
 
   const value = useMemo<I18n>(() => {

@@ -174,3 +174,59 @@ export interface MonthReport {
   hardWords: ReportWord[];
   unlearnedWords: ReportWord[];
 }
+
+// --- training ---------------------------------------------------------------------------------------
+
+export type SessionKind = 'FIRST_PASS' | 'PRACTICE';
+export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED';
+export type Verdict = 'CORRECT' | 'WRONG' | 'IGNORED';
+
+/** The word to spell now. `hintMask` is the primary answer with hidden letters as `_`. */
+export interface CurrentItem {
+  wordId: number;
+  round: number;
+  position: number;
+  prompt: string;
+  answerLength: number;
+  hintMask: string;
+  hintAvailable: boolean;
+  roundSize: number;
+  remainingInRound: number;
+}
+
+export interface WordState {
+  weekWordId: number;
+  solvedRound: number | null;
+  hintUsed: boolean;
+  problematic: boolean;
+  points: number;
+}
+
+export interface TrainingSession {
+  id: number;
+  weekId: number;
+  kind: SessionKind;
+  status: SessionStatus;
+  round: number;
+  current: CurrentItem | null;
+  points: number;
+  maxPoints: number;
+  counts: boolean;
+  words: WordState[];
+}
+
+export interface AnswerResponse {
+  verdict: Verdict;
+  correctAnswer: string | null;
+  showCorrectAnswerFor: number;
+  becameProblematic: boolean;
+  roundFinished: boolean;
+  sessionFinished: boolean;
+  next: CurrentItem | null;
+  points: number;
+}
+
+export interface HintResponse {
+  hintMask: string;
+  hintAvailable: boolean;
+}
