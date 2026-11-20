@@ -1,0 +1,291 @@
+{
+  "app": {
+    "name": "KidsVocabulary"
+  },
+  "common": {
+    "loading": "Загрузка…",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "edit": "Изменить",
+    "yes": "да",
+    "language": "Язык",
+    "points": "{points} из {max} баллов"
+  },
+  "errors": {
+    "generic": "Что-то пошло не так. Попробуйте ещё раз.",
+    "NETWORK": "Нет связи с сервером. Проверьте сеть и попробуйте снова.",
+    "VALIDATION": "Проверьте введённые данные.",
+    "NOT_FOUND": "Не найдено.",
+    "CONFLICT": "Сейчас это действие невозможно.",
+    "INVALID_CREDENTIALS": "Неверный e-mail или пароль.",
+    "INVALID_REFRESH_TOKEN": "Сеанс завершён. Войдите снова.",
+    "UNAUTHORIZED": "Сеанс завершён. Войдите снова.",
+    "INVALID_PIN": "Неверный PIN.",
+    "PIN_LOCKED": "Слишком много неверных PIN. Режим родителя заблокирован на 5 минут.",
+    "FORBIDDEN": "В этом режиме действие недоступно.",
+    "SESSION_CLOSED": "Эта тренировка уже закрыта."
+  },
+  "languages": {
+    "ui": {
+      "ru": "Русский",
+      "en": "English"
+    },
+    "short": {
+      "ru": "RU",
+      "et": "ET",
+      "en": "EN"
+    },
+    "name": {
+      "ru": "русский",
+      "et": "эстонский",
+      "en": "английский"
+    }
+  },
+  "nav": {
+    "children": "Дети",
+    "settings": "Настройки",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "loginTitle": "Вход",
+    "registerTitle": "Регистрация",
+    "email": "E-mail",
+    "password": "Пароль",
+    "passwordHint": "Не короче 8 символов",
+    "pin": "PIN родителя",
+    "pinHint": "4–6 цифр; нужен, чтобы выйти из режима ребёнка",
+    "pinRepeat": "Повторите PIN",
+    "loginButton": "Войти",
+    "registerButton": "Зарегистрироваться",
+    "noAccount": "Ещё нет аккаунта?",
+    "registerLink": "Зарегистрироваться",
+    "haveAccount": "Уже зарегистрированы?",
+    "loginLink": "Войти",
+    "invalid": {
+      "email": "Введите корректный e-mail.",
+      "password": "Пароль должен быть не короче 8 символов.",
+      "pin": "PIN — от 4 до 6 цифр.",
+      "pinRepeat": "PIN не совпадают.",
+      "timezone": "Неизвестный часовой пояс."
+    }
+  },
+  "children": {
+    "title": "Дети",
+    "add": "Добавить ребёнка",
+    "addFirst": "Добавить первого ребёнка",
+    "empty": "Пока нет ни одного профиля. Добавьте ребёнка, чтобы готовить наборы слов.",
+    "age_one": "{count} год",
+    "age_few": "{count} года",
+    "age_many": "{count} лет",
+    "age_other": "{count} года"
+  },
+  "levels": {
+    "A0": "начальный",
+    "A1": "элементарный",
+    "A2": "базовый"
+  },
+  "childForm": {
+    "newTitle": "Новый профиль",
+    "editTitle": "Профиль ребёнка",
+    "name": "Имя",
+    "birthDate": "Дата рождения",
+    "level": "Уровень",
+    "nativeLang": "Родной язык",
+    "targetLang": "Изучаемый язык",
+    "weekSize": "Слов в неделю",
+    "weekSizeHint": "Размер недельного набора по умолчанию, 1–50",
+    "archive": "Архивировать профиль",
+    "archiveConfirm": "Архивировать профиль «{name}»? Он исчезнет из списка.",
+    "invalid": {
+      "name": "Введите имя (до 50 символов).",
+      "birthDate": "Дата рождения должна быть в прошлом.",
+      "level": "Выберите уровень.",
+      "nativeLang": "Выберите язык.",
+      "targetLang": "Выберите язык.",
+      "defaultWeekSize": "Введите число от 1 до 50."
+    }
+  },
+  "child": {
+    "weekSize_one": "{count} слово в неделю",
+    "weekSize_few": "{count} слова в неделю",
+    "weekSize_many": "{count} слов в неделю",
+    "weekSize_other": "{count} слова в неделю",
+    "openChildMode": "Передать ребёнку",
+    "currentWeek": "Эта неделя",
+    "noCurrentWeek": "На этой неделе набор не запущен — месяц на паузе.",
+    "preparedWeek": "Подготовленный набор",
+    "noPreparedWeek": "Пока ничего не подготовлено.",
+    "continueEditing": "Продолжить редактирование",
+    "viewSet": "Открыть набор",
+    "prepareThisWeek": "Подготовить на эту неделю",
+    "prepareNextWeek": "Подготовить с {date}",
+    "monthTitle": "Месяц {n}",
+    "monthNotStarted": "Первый месяц ещё не начался",
+    "monthDetails": "Подробнее",
+    "weeksClosed": "Завершено недель: {n} из 4",
+    "reward": "Награда",
+    "rewardPlaceholder": "например, поход в зоопарк",
+    "rewardSaved": "Награда сохранена.",
+    "rewardHint": "Ребёнок получает её, если месяц закончился с результатом 80% и выше.",
+    "history": "История",
+    "noHistory": "Завершённых недель пока нет.",
+    "months": "Месяцы",
+    "weeks": "Недели",
+    "firstPass": {
+      "notStarted": "ребёнок ещё не начинал",
+      "inProgress": "первое прохождение идёт",
+      "finished": "первое прохождение завершено",
+      "expired": "неделя закончилась до конца первого прохождения"
+    }
+  },
+  "week": {
+    "title": "Набор {from} – {to}",
+    "indexShort": "Неделя {n}",
+    "indexOfMonth": "Неделя {n} из 4 в месяце",
+    "wordsCount_one": "{count} слово",
+    "wordsCount_few": "{count} слова",
+    "wordsCount_many": "{count} слов",
+    "wordsCount_other": "{count} слова",
+    "status": {
+      "DRAFT": "Черновик",
+      "SCHEDULED": "Запланирован",
+      "ACTIVE": "Идёт",
+      "COMPLETED": "Завершён",
+      "EXPIRED": "Истёк"
+    },
+    "outcome": {
+      "LEARNED": "Выучено",
+      "HARD": "Трудное",
+      "UNLEARNED": "Не выучено"
+    },
+    "source": {
+      "MANUAL": "вручную",
+      "AI": "ИИ",
+      "DICTIONARY": "словарь",
+      "CARRY_OVER": "повтор"
+    },
+    "settings": "Неделя",
+    "startsOn": "Начало",
+    "thisWeek": "Эта неделя",
+    "nextWeek": "Следующая неделя",
+    "wordCount": "Количество слов",
+    "wordCountTooSmall_one": "В наборе уже {count} слово — сначала удалите лишние.",
+    "wordCountTooSmall_few": "В наборе уже {count} слова — сначала удалите лишние.",
+    "wordCountTooSmall_many": "В наборе уже {count} слов — сначала удалите лишние.",
+    "wordCountTooSmall_other": "В наборе уже {count} слова — сначала удалите лишние.",
+    "outdated": "Этот черновик относится к уже прошедшей неделе. Выберите эту или следующую неделю и сохраните.",
+    "words": "Слова",
+    "filled": "{n} из {total}",
+    "noWords": "Набор пуст. Добавьте слова вручную или заполните автоматически.",
+    "alsoAccepted": "также: {list}",
+    "carryOverLocked": "с прошлого месяца, удалить нельзя",
+    "replace": "Заменить",
+    "replaceWord": "Заменить «{word}»",
+    "remove": "Удалить",
+    "removeWord": "Удалить «{word}»",
+    "addTitle": "Добавить слово",
+    "addSource": "Слово ({lang})",
+    "addTarget": "Перевод ({lang})",
+    "addExtra": "Другие допустимые написания",
+    "addExtraHint": "Через запятую, например: color, colour",
+    "addButton": "Добавить",
+    "fillTitle": "Заполнить автоматически",
+    "fillHint": "Подбор учитывает возраст, уровень и историю ребёнка.",
+    "topic": "Тема",
+    "anyTopic": "Любая тема",
+    "fill_one": "Добавить {count} слово",
+    "fill_few": "Добавить {count} слова",
+    "fill_many": "Добавить {count} слов",
+    "fill_other": "Добавить {count} слова",
+    "filling": "Подбираю слова…",
+    "launchNow": "Запустить неделю сейчас",
+    "schedule": "Запланировать с {date}",
+    "launchNeedsWords_one": "Не хватает {count} слова",
+    "launchNeedsWords_few": "Не хватает {count} слов",
+    "launchNeedsWords_many": "Не хватает {count} слов",
+    "launchNeedsWords_other": "Не хватает {count} слова",
+    "deleteDraft": "Удалить черновик",
+    "deleteConfirm": "Удалить этот черновик? Слова прошлого месяца вернутся в очередь.",
+    "scheduledInfo": "Набор зафиксирован и запустится автоматически {date}.",
+    "unschedule": "Вернуть в черновик",
+    "result": "Итог",
+    "stats": "Слова",
+    "problematic": "проблемное",
+    "problematicHint": "Ошибка в трёх раундах",
+    "col": {
+      "word": "Слово",
+      "answer": "Ответ",
+      "wrongRounds": "Ошибочных раундов",
+      "solvedRound": "Решено в раунде",
+      "hint": "Подсказка",
+      "points": "Баллы",
+      "outcome": "Итог"
+    },
+    "setFull": "Набор заполнен"
+  },
+  "month": {
+    "inProgress": "идёт",
+    "progress": "Прогресс",
+    "weeksDone": "Завершено недель: {n} из 4",
+    "noReward": "не задана",
+    "noWeeks": "В этом месяце ещё нет недель.",
+    "report": "Отчёт за месяц",
+    "noRewardSet": "Награда не была задана. Договоритесь о ней с ребёнком!",
+    "result": {
+      "REWARD": "Награда получена",
+      "GOOD": "Хорошо",
+      "REPEAT": "Повторить"
+    },
+    "verdict": {
+      "REWARD": "Отличный месяц: 80% и выше. Награда заслужена!",
+      "GOOD": "Хороший месяц: 60–80%. Ещё чуть-чуть — и будет награда.",
+      "REPEAT": "Меньше 60%: слова стоит повторить."
+    },
+    "col": {
+      "week": "Неделя",
+      "points": "Баллы"
+    },
+    "hardWords": "Трудные слова",
+    "hardHint": "Решены только после нескольких раундов или с подсказкой; вернутся в следующем месяце.",
+    "unlearnedWords": "Не выучено",
+    "unlearnedHint": "Ни разу не написаны верно в первом прохождении; вернутся в следующем месяце в первую очередь.",
+    "none": "Нет."
+  },
+  "topics": {
+    "food": "Еда",
+    "animals": "Животные",
+    "home": "Дом",
+    "actions": "Действия",
+    "nature": "Природа",
+    "school": "Школа",
+    "family": "Семья",
+    "describing": "Описания",
+    "clothes": "Одежда",
+    "body": "Тело",
+    "numbers": "Числа",
+    "transport": "Транспорт",
+    "colours": "Цвета",
+    "toys": "Игрушки"
+  },
+  "settings": {
+    "title": "Настройки",
+    "account": "Аккаунт",
+    "timezone": "Часовой пояс: {tz}",
+    "changePin": "Сменить PIN родителя",
+    "currentPassword": "Текущий пароль",
+    "newPin": "Новый PIN",
+    "pinChanged": "PIN изменён."
+  },
+  "childMode": {
+    "parentMode": "Родитель",
+    "hello": "Привет, {name}!",
+    "weekReady_one": "На этой неделе тебя ждёт {count} слово.",
+    "weekReady_few": "На этой неделе тебя ждут {count} слова.",
+    "weekReady_many": "На этой неделе тебя ждут {count} слов.",
+    "weekReady_other": "На этой неделе тебя ждут {count} слова.",
+    "noWeek": "На этой неделе слов пока нет.",
+    "trainingSoon": "Тренировка скоро появится.",
+    "pinTitle": "Введите PIN родителя",
+    "unlock": "Продолжить"
+  }
+}

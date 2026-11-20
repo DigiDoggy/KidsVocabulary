@@ -1,0 +1,277 @@
+{
+  "app": {
+    "name": "KidsVocabulary"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "yes": "yes",
+    "language": "Language",
+    "points": "{points} of {max} points"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "NETWORK": "No connection to the server. Check the network and try again.",
+    "VALIDATION": "Please check the entered data.",
+    "NOT_FOUND": "Not found.",
+    "CONFLICT": "This action is not possible right now.",
+    "INVALID_CREDENTIALS": "Wrong e-mail or password.",
+    "INVALID_REFRESH_TOKEN": "The session has ended. Please sign in again.",
+    "UNAUTHORIZED": "The session has ended. Please sign in again.",
+    "INVALID_PIN": "Wrong PIN.",
+    "PIN_LOCKED": "Too many wrong PINs. Parent mode is locked for 5 minutes.",
+    "FORBIDDEN": "Not allowed in this mode.",
+    "SESSION_CLOSED": "This training session is already closed."
+  },
+  "languages": {
+    "ui": {
+      "ru": "Русский",
+      "en": "English"
+    },
+    "short": {
+      "ru": "RU",
+      "et": "ET",
+      "en": "EN"
+    },
+    "name": {
+      "ru": "Russian",
+      "et": "Estonian",
+      "en": "English"
+    }
+  },
+  "nav": {
+    "children": "Children",
+    "settings": "Settings",
+    "logout": "Sign out"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "registerTitle": "Create an account",
+    "email": "E-mail",
+    "password": "Password",
+    "passwordHint": "At least 8 characters",
+    "pin": "Parent PIN",
+    "pinHint": "4–6 digits; needed to leave the child mode",
+    "pinRepeat": "Repeat the PIN",
+    "loginButton": "Sign in",
+    "registerButton": "Create account",
+    "noAccount": "No account yet?",
+    "registerLink": "Create one",
+    "haveAccount": "Already registered?",
+    "loginLink": "Sign in",
+    "invalid": {
+      "email": "Enter a valid e-mail address.",
+      "password": "The password must be at least 8 characters long.",
+      "pin": "The PIN must be 4 to 6 digits.",
+      "pinRepeat": "The PINs do not match.",
+      "timezone": "Unknown time zone."
+    }
+  },
+  "children": {
+    "title": "Children",
+    "add": "Add a child",
+    "addFirst": "Add the first child",
+    "empty": "No children yet. Add a profile to start preparing word sets.",
+    "age_one": "{count} year",
+    "age_other": "{count} years"
+  },
+  "levels": {
+    "A0": "beginner",
+    "A1": "elementary",
+    "A2": "pre-intermediate"
+  },
+  "childForm": {
+    "newTitle": "New child",
+    "editTitle": "Edit profile",
+    "name": "Name",
+    "birthDate": "Birth date",
+    "level": "Level",
+    "nativeLang": "Native language",
+    "targetLang": "Language to learn",
+    "weekSize": "Words per week",
+    "weekSizeHint": "Default size of a weekly set, 1–50",
+    "archive": "Archive profile",
+    "archiveConfirm": "Archive the profile of {name}? It will disappear from the list.",
+    "invalid": {
+      "name": "Enter a name (up to 50 characters).",
+      "birthDate": "The birth date must be in the past.",
+      "level": "Choose a level.",
+      "nativeLang": "Choose a language.",
+      "targetLang": "Choose a language.",
+      "defaultWeekSize": "Enter a number from 1 to 50."
+    }
+  },
+  "child": {
+    "weekSize_one": "{count} word a week",
+    "weekSize_other": "{count} words a week",
+    "openChildMode": "Hand over to the child",
+    "currentWeek": "This week",
+    "noCurrentWeek": "No set is running this week, so the month is paused.",
+    "preparedWeek": "Prepared set",
+    "noPreparedWeek": "Nothing is prepared yet.",
+    "continueEditing": "Continue editing",
+    "viewSet": "Open the set",
+    "prepareThisWeek": "Prepare for this week",
+    "prepareNextWeek": "Prepare from {date}",
+    "monthTitle": "Month {n}",
+    "monthNotStarted": "The first month has not started yet",
+    "monthDetails": "Details",
+    "weeksClosed": "Weeks finished: {n} of 4",
+    "reward": "Reward",
+    "rewardPlaceholder": "e.g. a trip to the zoo",
+    "rewardSaved": "Reward saved.",
+    "rewardHint": "Earned when the month ends with 80% or more.",
+    "history": "History",
+    "noHistory": "No finished weeks yet.",
+    "months": "Months",
+    "weeks": "Weeks",
+    "firstPass": {
+      "notStarted": "the child has not started yet",
+      "inProgress": "first pass in progress",
+      "finished": "first pass finished",
+      "expired": "the week ended before the first pass was finished"
+    }
+  },
+  "week": {
+    "title": "Set {from} – {to}",
+    "indexShort": "Week {n}",
+    "indexOfMonth": "Week {n} of 4 in the month",
+    "wordsCount_one": "{count} word",
+    "wordsCount_other": "{count} words",
+    "status": {
+      "DRAFT": "Draft",
+      "SCHEDULED": "Scheduled",
+      "ACTIVE": "Running",
+      "COMPLETED": "Completed",
+      "EXPIRED": "Expired"
+    },
+    "outcome": {
+      "LEARNED": "Learned",
+      "HARD": "Hard",
+      "UNLEARNED": "Not learned"
+    },
+    "source": {
+      "MANUAL": "manual",
+      "AI": "AI",
+      "DICTIONARY": "dictionary",
+      "CARRY_OVER": "repeat"
+    },
+    "settings": "Week",
+    "startsOn": "Starts",
+    "thisWeek": "This week",
+    "nextWeek": "Next week",
+    "wordCount": "Number of words",
+    "wordCountTooSmall_one": "The set already has {count} word; remove words first.",
+    "wordCountTooSmall_other": "The set already has {count} words; remove words first.",
+    "outdated": "This draft is for a week that is already over. Choose this week or next week and save.",
+    "words": "Words",
+    "filled": "{n} of {total}",
+    "noWords": "The set is empty. Add words yourself or fill it up automatically.",
+    "alsoAccepted": "also: {list}",
+    "carryOverLocked": "from last month, cannot be removed",
+    "replace": "Replace",
+    "replaceWord": "Replace {word}",
+    "remove": "Remove",
+    "removeWord": "Remove {word}",
+    "addTitle": "Add a word",
+    "addSource": "Word ({lang})",
+    "addTarget": "Translation ({lang})",
+    "addExtra": "Other accepted spellings",
+    "addExtraHint": "Comma-separated, e.g. color, colour",
+    "addButton": "Add",
+    "fillTitle": "Fill up automatically",
+    "fillHint": "Suggestions take the child's age, level and history into account.",
+    "topic": "Topic",
+    "anyTopic": "Any topic",
+    "fill_one": "Add {count} word",
+    "fill_other": "Add {count} words",
+    "filling": "Choosing words…",
+    "launchNow": "Start the week now",
+    "schedule": "Schedule from {date}",
+    "launchNeedsWords_one": "{count} more word needed",
+    "launchNeedsWords_other": "{count} more words needed",
+    "deleteDraft": "Delete draft",
+    "deleteConfirm": "Delete this draft? Words from last month go back to the queue.",
+    "scheduledInfo": "The set is frozen and starts automatically on {date}.",
+    "unschedule": "Back to editing",
+    "result": "Result",
+    "stats": "Words",
+    "problematic": "difficult",
+    "problematicHint": "Failed in three rounds",
+    "col": {
+      "word": "Word",
+      "answer": "Answer",
+      "wrongRounds": "Wrong rounds",
+      "solvedRound": "Solved in round",
+      "hint": "Hint",
+      "points": "Points",
+      "outcome": "Result"
+    },
+    "setFull": "The set is full"
+  },
+  "month": {
+    "inProgress": "in progress",
+    "progress": "Progress",
+    "weeksDone": "Weeks finished: {n} of 4",
+    "noReward": "not set",
+    "noWeeks": "No weeks in this month yet.",
+    "report": "Month report",
+    "noRewardSet": "No reward was set. Agree on one with the child!",
+    "result": {
+      "REWARD": "Reward earned",
+      "GOOD": "Good",
+      "REPEAT": "Repeat"
+    },
+    "verdict": {
+      "REWARD": "Excellent month: 80% or more. The reward is earned!",
+      "GOOD": "A good month: 60–80%. A little more and the reward is there.",
+      "REPEAT": "Below 60%: the words are worth repeating."
+    },
+    "col": {
+      "week": "Week",
+      "points": "Points"
+    },
+    "hardWords": "Hard words",
+    "hardHint": "Solved only after several rounds or with a hint; they return next month.",
+    "unlearnedWords": "Not learned",
+    "unlearnedHint": "Never spelled correctly in the first pass; they return next month first.",
+    "none": "None."
+  },
+  "topics": {
+    "food": "Food",
+    "animals": "Animals",
+    "home": "Home",
+    "actions": "Actions",
+    "nature": "Nature",
+    "school": "School",
+    "family": "Family",
+    "describing": "Describing words",
+    "clothes": "Clothes",
+    "body": "Body",
+    "numbers": "Numbers",
+    "transport": "Transport",
+    "colours": "Colours",
+    "toys": "Toys"
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "timezone": "Time zone: {tz}",
+    "changePin": "Change the parent PIN",
+    "currentPassword": "Current password",
+    "newPin": "New PIN",
+    "pinChanged": "The PIN has been changed."
+  },
+  "childMode": {
+    "parentMode": "Parent",
+    "hello": "Hi, {name}!",
+    "weekReady_one": "This week you have {count} word to learn.",
+    "weekReady_other": "This week you have {count} words to learn.",
+    "noWeek": "There are no words for this week yet.",
+    "trainingSoon": "Training is coming soon.",
+    "pinTitle": "Enter the parent PIN",
+    "unlock": "Continue"
+  }
+}

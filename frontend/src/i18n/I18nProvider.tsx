@@ -1,0 +1,116 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import en from './locales/en.json';
+import ru from './locales/ru.json';
+
+type Messages = { [key: string]: string | Messages };
+
+export const LANGUAGES = ['ru', 'en'] as const;
+export type UiLanguage = (typeof LANGUAGES)[number];
+
+const CATALOGS: Record<UiLanguage, Messages> = { en, ru };
+const FALLBACK: UiLanguage = 'en';
+const DEFAULT_LANG: UiLanguage = 'ru';
+const STORAGE_KEY = 'kidsvocab.lang';
+
+export type Params = Record<string, string | number>;
+
+export interface I18n {
+  lang: UiLanguage;
+  setLang: (lang: UiLanguage) => void;
+  /** Translates a dotted key; `{name}` placeholders are filled from params; `count` selects a plural form. */
+  t: (key: string, params?: Params) => string;
+  /** True when the key exists (in the current language or the fallback). */
+  has: (key: string) => boolean;
+  formatDate: (isoDate: string, options?: Intl.DateTimeFormatOptions) => string;
+  formatNumber: (value: number | null | undefined) => string;
+}
+
+function lookup(catalog: Messages, key: string): string | undefined {
+  let node: string | Messages | undefined = catalog;
+  for (const part of key.split('.')) {
+    if (node === undefined || typeof node === 'string') {
+      return undefined;
+    }
+    node = node[part];
+  }
+  return typeof node === 'string' ? node : undefined;
+}
+
+export function translate(lang: UiLanguage, key: string, params?: Params): string {
+  const count = params?.count;
+  let template: string | undefined;
+  for (const l of [lang, FALLBACK]) {
+    if (typeof count === 'number') {
+      const form = new Intl.PluralRules(l).select(count);
+      template = lookup(CATALOGS[l], `${key}_${form}`) ?? lookup(CATALOGS[l], `${key}_other`);
+    }
+    template ??= lookup(CATALOGS[l], key);
+    if (template !== undefined) {
+      break;
+    }
+  }
+  if (template === undefined) {
+    return key;
+  }
+  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+    params && name in params ? String(params[name]) : match,
+  );
+}
+
+/** Parses `YYYY-MM-DD` as a local calendar date (no time zone shift). */
+export function parseIsoDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function readStoredLang(): UiLanguage | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return (LANGUAGES as readonly string[]).includes(stored ?? '') ? (stored as UiLanguage) : null;
+  } catch {
+    return null;
+  }
+}
+
+const I18nContext = createContext<I18n | null>(null);
+
+export function I18nProvider({ children, initialLang }: { children: ReactNode; initialLang?: UiLanguage }) {
+  const [lang, setLangState] = useState<UiLanguage>(() => initialLang ?? readStoredLang() ?? DEFAULT_LANG);
+
+  const setLang = useCallback((next: UiLanguage) => {
+    setLangState(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // storage may be unavailable (private mode); the choice then lasts for this page only
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  const value = useMemo<I18n>(() => {
+    const locale = lang === 'en' ? 'en-GB' : lang;
+    const numbers = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+    return {
+      lang,
+      setLang,
+      t: (key, params) => translate(lang, key, params),
+      has: (key) => lookup(CATALOGS[lang], key) !== undefined || lookup(CATALOGS[FALLBACK], key) !== undefined,
+      formatDate: (isoDate, options = { day: 'numeric', month: 'short' }) =>
+        new Intl.DateTimeFormat(locale, options).format(parseIsoDate(isoDate)),
+      formatNumber: (value) => (value === null || value === undefined ? '—' : numbers.format(value)),
+    };
+  }, [lang, setLang]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n(): I18n {
+  const ctx = useContext(I18nContext);
+  if (!ctx) {
+    throw new Error('useI18n must be used inside I18nProvider');
+  }
+  return ctx;
+}

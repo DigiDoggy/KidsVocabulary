@@ -1,41 +1,70 @@
-import { useEffect, useState } from 'react';
-import { fetchInfo, type AppInfo } from './api/client';
+import { useRef, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { Spinner } from './components/ui';
+import { LoginPage, RegisterPage } from './features/auth/AuthPages';
+import { ChildModePage } from './features/child/ChildModePage';
+import { ChildFormPage } from './features/parent/ChildFormPage';
+import { ChildPage } from './features/parent/ChildPage';
+import { ChildrenPage } from './features/parent/ChildrenPage';
+import { MonthPage } from './features/parent/MonthPage';
+import { ParentLayout } from './features/parent/ParentLayout';
+import { SettingsPage } from './features/parent/SettingsPage';
+import { WeekPage } from './features/parent/WeekPage';
+import { I18nProvider, type UiLanguage } from './i18n/I18nProvider';
 
-type State =
-  | { kind: 'loading' }
-  | { kind: 'ok'; info: AppInfo }
-  | { kind: 'error'; message: string };
+/** Sends each mode to its own area: anonymous → login, child mode → child screens, parent → parent screens. */
+function Guard({ need, children }: { need: 'anonymous' | 'PARENT' | 'CHILD'; children: ReactNode }) {
+  const auth = useAuth();
+  // remembered so that returning from child mode opens that child's page
+  const lastChildId = useRef<number | null>(null);
+  if (auth.status === 'signed-in' && auth.childId !== null) {
+    lastChildId.current = auth.childId;
+  }
+  if (auth.status === 'loading') {
+    return (
+      <main className="content">
+        <Spinner />
+      </main>
+    );
+  }
+  const current = auth.status === 'anonymous' ? 'anonymous' : auth.mode;
+  if (current === need) {
+    return <>{children}</>;
+  }
+  const parentHome = need === 'CHILD' && lastChildId.current !== null ? `/children/${lastChildId.current}` : '/';
+  const home = current === 'anonymous' ? '/login' : current === 'CHILD' ? '/child' : parentHome;
+  return <Navigate to={home} replace />;
+}
 
-export function App() {
-  const [state, setState] = useState<State>({ kind: 'loading' });
-
-  useEffect(() => {
-    fetchInfo()
-      .then((info) => setState({ kind: 'ok', info }))
-      .catch((e: Error) => setState({ kind: 'error', message: e.message }));
-  }, []);
-
+export function AppRoutes() {
   return (
-    <main className="page">
-      <h1 className="title">KidsVocabulary</h1>
-      {state.kind === 'loading' && <p className="status">Connecting…</p>}
-      {state.kind === 'error' && (
-        <p className="status status--error" role="alert">
-          Server unavailable ({state.message})
-        </p>
-      )}
-      {state.kind === 'ok' && (
-        <>
-          <p className="status status--ok">Server is up · version {state.info.version}</p>
-          <ul className="langs">
-            {state.info.languages.map((l) => (
-              <li key={l.code} className="lang">
-                <span className="lang__code">{l.code}</span> {l.name}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </main>
+    <Routes>
+      <Route path="/login" element={<Guard need="anonymous"><LoginPage /></Guard>} />
+      <Route path="/register" element={<Guard need="anonymous"><RegisterPage /></Guard>} />
+      <Route path="/child" element={<Guard need="CHILD"><ChildModePage /></Guard>} />
+      <Route element={<Guard need="PARENT"><ParentLayout /></Guard>}>
+        <Route index element={<ChildrenPage />} />
+        <Route path="children/new" element={<ChildFormPage />} />
+        <Route path="children/:id" element={<ChildPage />} />
+        <Route path="children/:id/edit" element={<ChildFormPage />} />
+        <Route path="weeks/:weekId" element={<WeekPage />} />
+        <Route path="months/:monthId" element={<MonthPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export function App({ initialLang }: { initialLang?: UiLanguage }) {
+  return (
+    <I18nProvider initialLang={initialLang}>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
