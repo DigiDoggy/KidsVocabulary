@@ -3,6 +3,7 @@ import { getMonth, getMonthReport } from '../../api/client';
 import type { MonthReport, ReportWord } from '../../api/types';
 import { Card, ErrorMessage, Spinner } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { MonthResultBadge, PointsBar, WeekStatusBadge } from './shared';
 
@@ -14,8 +15,9 @@ export function MonthPage() {
     const report = month.status === 'COMPLETED' ? await getMonthReport(monthId) : null;
     return { month, report };
   }, [monthId]);
+  usePageTitle(loaded.data && t('child.monthTitle', { n: loaded.data.month.seqNo }));
 
-  if (loaded.error) return <ErrorMessage error={loaded.error} />;
+  if (loaded.error) return <ErrorMessage error={loaded.error} onRetry={loaded.reload} />;
   if (!loaded.data) return <Spinner />;
   const { month, report } = loaded.data;
 

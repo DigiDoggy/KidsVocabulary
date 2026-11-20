@@ -18,6 +18,7 @@ import type { Child, Week, WordView } from '../../api/types';
 import { Card, ErrorMessage, Field, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { weekStarts } from '../../lib/dates';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { useParentContext } from './ParentLayout';
 import { OutcomeBadge, PointsBar, SourceBadge, WeekStatusBadge } from './shared';
@@ -29,8 +30,10 @@ export function WeekPage() {
     const week = await getWeek(weekId);
     return { week, child: await getChild(week.childId) };
   }, [weekId]);
+  const shown = loaded.data?.week;
+  usePageTitle(shown && t('week.title', { from: formatDate(shown.startDate), to: formatDate(shown.endDate) }));
 
-  if (loaded.error) return <ErrorMessage error={loaded.error} />;
+  if (loaded.error) return <ErrorMessage error={loaded.error} onRetry={loaded.reload} />;
   if (!loaded.data) return <Spinner />;
   const { week, child } = loaded.data;
   const setWeek = (next: Week) => loaded.setData({ week: next, child });
@@ -373,7 +376,7 @@ function RunningView({ week }: { week: Week }) {
       )}
       <Card title={t('week.stats')}>
         {stats.error ? (
-          <ErrorMessage error={stats.error} />
+          <ErrorMessage error={stats.error} onRetry={stats.reload} />
         ) : !stats.data ? (
           <Spinner />
         ) : (

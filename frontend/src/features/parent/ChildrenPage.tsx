@@ -3,12 +3,14 @@ import { listChildren } from '../../api/client';
 import { ErrorMessage, Spinner } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ageOn } from '../../lib/dates';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 
 export function ChildrenPage() {
   const { t } = useI18n();
   const children = useLoad(listChildren, []);
   const today = new Date().toISOString().slice(0, 10);
+  usePageTitle(t('children.title'));
 
   return (
     <>
@@ -25,7 +27,7 @@ export function ChildrenPage() {
           </Link>
         </div>
       </div>
-      <ErrorMessage error={children.error} />
+      <ErrorMessage error={children.error} onRetry={children.reload} />
       {children.loading && !children.data && <Spinner />}
       {children.data && children.data.length === 0 && (
         <div className="empty">

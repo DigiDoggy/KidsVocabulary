@@ -471,5 +471,6 @@ KidsVocabulary/
       security/    # JWT, PARENT/CHILD modes
     src/main/resources/db/migration/
   frontend/
-    src/{api, features/parent, features/child, i18n, components}
+    src/{api, auth, features/{auth,parent,child}, i18n/locales, components, lib, a11y}
+    e2e/               # Playwright smoke tests against a running stack
 ```

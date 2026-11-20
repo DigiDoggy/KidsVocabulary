@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { changePin } from '../../api/client';
 import { Card, ErrorMessage, Field, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useParentContext } from './ParentLayout';
 
 export function SettingsPage() {
@@ -11,6 +12,7 @@ export function SettingsPage() {
   const [pin, setPin] = useState('');
   const [done, setDone] = useState(false);
   const [run, busy, error] = useAction();
+  usePageTitle(t('settings.title'));
   const pinValid = /^\d{4,6}$/.test(pin);
 
   async function submit(e: FormEvent) {

@@ -69,9 +69,25 @@ describe('http client', () => {
     expect(error).toMatchObject({ status: 400, code: 'VALIDATION', fieldErrors: { name: 'must not be blank' } });
   });
 
-  it('reports a network failure as code NETWORK', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+  it('reports a network failure as code NETWORK after one retry of a GET', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
     await expect(request('GET', '/children', { auth: false })).rejects.toMatchObject({ status: 0, code: 'NETWORK' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('repeats a GET that hit a network failure', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(new Response('[]', { status: 200 }));
+    await expect(request('GET', '/children', { auth: false })).resolves.toEqual([]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('never repeats a write by itself', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(request('POST', '/children', { body: {}, auth: false })).rejects.toMatchObject({ code: 'NETWORK' });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it('returns undefined for 204 No Content', async () => {

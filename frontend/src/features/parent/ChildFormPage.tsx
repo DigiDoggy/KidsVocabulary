@@ -5,6 +5,7 @@ import { ApiError } from '../../api/http';
 import type { Child, ChildData, Level } from '../../api/types';
 import { ErrorMessage, Field, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 
 const LEVELS: Level[] = ['A0', 'A1', 'A2'];
@@ -17,8 +18,9 @@ export function ChildFormPage() {
   const childId = id ? Number(id) : null;
   const child = useLoad(() => (childId ? getChild(childId) : Promise.resolve(null)), [childId]);
   const { t } = useI18n();
+  usePageTitle(childId ? child.data?.name : t('childForm.newTitle'));
 
-  if (child.error) return <ErrorMessage error={child.error} />;
+  if (child.error) return <ErrorMessage error={child.error} onRetry={child.reload} />;
   if (child.loading) return <Spinner />;
   return (
     <>

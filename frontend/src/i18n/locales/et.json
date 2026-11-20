@@ -1,17 +1,277 @@
 {
+  "app": {
+    "name": "KidsVocabulary"
+  },
   "common": {
     "loading": "Laadin…",
-    "cancel": "Loobu"
+    "save": "Salvesta",
+    "cancel": "Loobu",
+    "edit": "Muuda",
+    "yes": "jah",
+    "language": "Keel",
+    "points": "{points} / {max} punkti",
+    "retry": "Proovi uuesti",
+    "details": "Üksikasjad"
   },
   "errors": {
     "generic": "Midagi läks valesti. Proovi uuesti.",
     "NETWORK": "Serveriga ühendus puudub. Kontrolli võrku ja proovi uuesti.",
+    "VALIDATION": "Kontrolli sisestatud andmeid.",
+    "NOT_FOUND": "Ei leitud.",
     "CONFLICT": "See toiming ei ole praegu võimalik.",
+    "INVALID_CREDENTIALS": "Vale e-post või parool.",
+    "INVALID_REFRESH_TOKEN": "Sessioon on lõppenud. Logi uuesti sisse.",
+    "UNAUTHORIZED": "Sessioon on lõppenud. Logi uuesti sisse.",
     "INVALID_PIN": "Vale PIN.",
     "PIN_LOCKED": "Liiga palju valesid PIN-koode. Lapsevanema režiim on 5 minutiks lukus.",
+    "FORBIDDEN": "Selles režiimis pole see lubatud.",
     "SESSION_CLOSED": "See harjutus on juba suletud.",
-    "UNAUTHORIZED": "Sessioon on lõppenud. Logi uuesti sisse.",
-    "INVALID_REFRESH_TOKEN": "Sessioon on lõppenud. Logi uuesti sisse."
+    "offline": "Internetiühendus puudub. Rakendus jätkab, kui ühendus taastub."
+  },
+  "languages": {
+    "ui": {
+      "ru": "Русский",
+      "en": "English",
+      "et": "Eesti"
+    },
+    "short": {
+      "ru": "RU",
+      "et": "ET",
+      "en": "EN"
+    },
+    "name": {
+      "ru": "vene",
+      "et": "eesti",
+      "en": "inglise"
+    }
+  },
+  "nav": {
+    "children": "Lapsed",
+    "settings": "Seaded",
+    "logout": "Logi välja"
+  },
+  "auth": {
+    "loginTitle": "Sisselogimine",
+    "registerTitle": "Konto loomine",
+    "email": "E-post",
+    "password": "Parool",
+    "passwordHint": "Vähemalt 8 märki",
+    "pin": "Lapsevanema PIN",
+    "pinHint": "4–6 numbrit; vaja lapse režiimist lahkumiseks",
+    "pinRepeat": "Korda PIN-koodi",
+    "loginButton": "Logi sisse",
+    "registerButton": "Loo konto",
+    "noAccount": "Kontot veel pole?",
+    "registerLink": "Loo konto",
+    "haveAccount": "Juba registreeritud?",
+    "loginLink": "Logi sisse",
+    "invalid": {
+      "email": "Sisesta korrektne e-posti aadress.",
+      "password": "Parool peab olema vähemalt 8 märki pikk.",
+      "pin": "PIN peab olema 4–6 numbrit.",
+      "pinRepeat": "PIN-koodid ei ühti.",
+      "timezone": "Tundmatu ajavöönd."
+    }
+  },
+  "children": {
+    "title": "Lapsed",
+    "add": "Lisa laps",
+    "addFirst": "Lisa esimene laps",
+    "empty": "Lapsi veel pole. Lisa profiil, et sõnakomplekte ette valmistada.",
+    "age_one": "{count} aasta",
+    "age_other": "{count} aastat",
+    "childMode": "Lapse režiim"
+  },
+  "levels": {
+    "A0": "algaja",
+    "A1": "algtase",
+    "A2": "põhitase"
+  },
+  "childForm": {
+    "newTitle": "Uus laps",
+    "editTitle": "Profiili muutmine",
+    "name": "Nimi",
+    "birthDate": "Sünnikuupäev",
+    "level": "Tase",
+    "nativeLang": "Emakeel",
+    "targetLang": "Õpitav keel",
+    "weekSize": "Sõnu nädalas",
+    "weekSizeHint": "Nädalakomplekti vaikimisi suurus, 1–50",
+    "archive": "Arhiveeri profiil",
+    "archiveConfirm": "Kas arhiveerida lapse {name} profiil? See kaob nimekirjast.",
+    "invalid": {
+      "name": "Sisesta nimi (kuni 50 märki).",
+      "birthDate": "Sünnikuupäev peab olema minevikus.",
+      "level": "Vali tase.",
+      "nativeLang": "Vali keel.",
+      "targetLang": "Vali keel.",
+      "defaultWeekSize": "Sisesta arv 1 kuni 50."
+    }
+  },
+  "child": {
+    "weekSize_one": "{count} sõna nädalas",
+    "weekSize_other": "{count} sõna nädalas",
+    "openChildMode": "Anna lapsele",
+    "currentWeek": "See nädal",
+    "noCurrentWeek": "Sel nädalal komplekti ei ole, seega kuu on pausil.",
+    "firstPass": {
+      "notStarted": "laps pole veel alustanud",
+      "inProgress": "esimene läbimine käib",
+      "finished": "esimene läbimine on tehtud",
+      "expired": "nädal lõppes enne esimese läbimise lõppu"
+    },
+    "preparedWeek": "Ettevalmistatud komplekt",
+    "noPreparedWeek": "Midagi pole veel ette valmistatud.",
+    "continueEditing": "Jätka muutmist",
+    "viewSet": "Ava komplekt",
+    "prepareThisWeek": "Valmista ette selleks nädalaks",
+    "prepareNextWeek": "Valmista ette alates {date}",
+    "monthTitle": "Kuu {n}",
+    "monthNotStarted": "Esimene kuu pole veel alanud",
+    "monthDetails": "Üksikasjad",
+    "weeksClosed": "Lõpetatud nädalaid: {n} / 4",
+    "reward": "Auhind",
+    "rewardPlaceholder": "nt loomaaias käimine",
+    "rewardSaved": "Auhind salvestatud.",
+    "rewardHint": "Laps saab selle, kui kuu tulemus on 80% või rohkem.",
+    "history": "Ajalugu",
+    "noHistory": "Lõpetatud nädalaid veel pole.",
+    "months": "Kuud",
+    "weeks": "Nädalad"
+  },
+  "week": {
+    "title": "Komplekt {from} – {to}",
+    "indexShort": "{n}. nädal",
+    "indexOfMonth": "Kuu {n}. nädal neljast",
+    "wordsCount_one": "{count} sõna",
+    "wordsCount_other": "{count} sõna",
+    "status": {
+      "DRAFT": "Mustand",
+      "SCHEDULED": "Plaanitud",
+      "ACTIVE": "Käib",
+      "COMPLETED": "Lõpetatud",
+      "EXPIRED": "Aegunud"
+    },
+    "outcome": {
+      "LEARNED": "Õpitud",
+      "HARD": "Raske",
+      "UNLEARNED": "Õppimata"
+    },
+    "source": {
+      "MANUAL": "käsitsi",
+      "AI": "TI",
+      "DICTIONARY": "sõnastik",
+      "CARRY_OVER": "kordus"
+    },
+    "settings": "Nädal",
+    "startsOn": "Algus",
+    "thisWeek": "See nädal",
+    "nextWeek": "Järgmine nädal",
+    "wordCount": "Sõnade arv",
+    "wordCountTooSmall_one": "Komplektis on juba {count} sõna; eemalda enne sõnu.",
+    "wordCountTooSmall_other": "Komplektis on juba {count} sõna; eemalda enne sõnu.",
+    "outdated": "See mustand on juba möödunud nädala jaoks. Vali see või järgmine nädal ja salvesta.",
+    "words": "Sõnad",
+    "filled": "{n} / {total}",
+    "noWords": "Komplekt on tühi. Lisa sõnad ise või täida automaatselt.",
+    "alsoAccepted": "ka: {list}",
+    "carryOverLocked": "eelmisest kuust, ei saa eemaldada",
+    "replace": "Asenda",
+    "replaceWord": "Asenda „{word}“",
+    "remove": "Eemalda",
+    "removeWord": "Eemalda „{word}“",
+    "addTitle": "Lisa sõna",
+    "addSource": "Sõna ({lang} keeles)",
+    "addTarget": "Tõlge ({lang} keeles)",
+    "addExtra": "Muud lubatud kirjapildid",
+    "addExtraHint": "Komadega eraldatult, nt color, colour",
+    "addButton": "Lisa",
+    "fillTitle": "Täida automaatselt",
+    "fillHint": "Valik arvestab lapse vanust, taset ja varasemaid sõnu.",
+    "topic": "Teema",
+    "anyTopic": "Mis tahes teema",
+    "fill_one": "Lisa {count} sõna",
+    "fill_other": "Lisa {count} sõna",
+    "filling": "Valin sõnu…",
+    "setFull": "Komplekt on täis",
+    "launchNow": "Käivita nädal kohe",
+    "schedule": "Plaani alates {date}",
+    "launchNeedsWords_one": "Puudu on {count} sõna",
+    "launchNeedsWords_other": "Puudu on {count} sõna",
+    "deleteDraft": "Kustuta mustand",
+    "deleteConfirm": "Kas kustutada see mustand? Eelmise kuu sõnad lähevad tagasi järjekorda.",
+    "scheduledInfo": "Komplekt on lukustatud ja käivitub automaatselt {date}.",
+    "unschedule": "Tagasi muutmisse",
+    "result": "Tulemus",
+    "stats": "Sõnad",
+    "problematic": "keeruline",
+    "problematicHint": "Vigane kolmes voorus",
+    "col": {
+      "word": "Sõna",
+      "answer": "Vastus",
+      "wrongRounds": "Vigaseid voore",
+      "solvedRound": "Lahendatud voorus",
+      "hint": "Vihje",
+      "points": "Punktid",
+      "outcome": "Tulemus"
+    }
+  },
+  "month": {
+    "inProgress": "käib",
+    "progress": "Edenemine",
+    "weeksDone": "Lõpetatud nädalaid: {n} / 4",
+    "noReward": "määramata",
+    "noWeeks": "Selles kuus veel nädalaid pole.",
+    "report": "Kuu aruanne",
+    "noRewardSet": "Auhinda ei määratud. Leppige lapsega kokku!",
+    "result": {
+      "REWARD": "Auhind teenitud",
+      "GOOD": "Hea",
+      "REPEAT": "Korda"
+    },
+    "verdict": {
+      "REWARD": "Suurepärane kuu: 80% või rohkem. Auhind on teenitud!",
+      "GOOD": "Hea kuu: 60–80%. Veel natuke ja auhind tuleb.",
+      "REPEAT": "Alla 60%: sõnu tasub korrata."
+    },
+    "col": {
+      "week": "Nädal",
+      "points": "Punktid"
+    },
+    "hardWords": "Rasked sõnad",
+    "hardHint": "Lahendatud alles mitme vooru järel või vihjega; tulevad järgmisel kuul tagasi.",
+    "unlearnedWords": "Õppimata",
+    "unlearnedHint": "Esimesel läbimisel ei kirjutatud kordagi õigesti; tulevad järgmisel kuul esimesena tagasi.",
+    "none": "Pole."
+  },
+  "topics": {
+    "food": "Toit",
+    "animals": "Loomad",
+    "home": "Kodu",
+    "actions": "Tegevused",
+    "nature": "Loodus",
+    "school": "Kool",
+    "family": "Pere",
+    "describing": "Omadussõnad",
+    "clothes": "Riided",
+    "body": "Keha",
+    "numbers": "Numbrid",
+    "transport": "Transport",
+    "colours": "Värvid",
+    "toys": "Mänguasjad"
+  },
+  "settings": {
+    "title": "Seaded",
+    "account": "Konto",
+    "timezone": "Ajavöönd: {tz}",
+    "changePin": "Muuda lapsevanema PIN-koodi",
+    "currentPassword": "Praegune parool",
+    "newPin": "Uus PIN",
+    "pinChanged": "PIN on muudetud."
+  },
+  "picker": {
+    "title": "Kes harjutab?",
+    "hint": "Lapsevanema režiimi naasmiseks on vaja PIN-koodi."
   },
   "kid": {
     "parentMode": "Lapsevanem",
@@ -56,6 +316,17 @@
     "firstTry_one": "Esimesel korral õigesti: {count} / {total}.",
     "firstTry_other": "Esimesel korral õigesti: {count} / {total}.",
     "counts": "Need tähed lähevad kuu arvestusse.",
-    "home": "Avalehele"
+    "home": "Avalehele",
+    "trainingTitle": "Harjutamine",
+    "starsLabel": "Tähed:"
+  },
+  "crash": {
+    "title": "Midagi läks valesti",
+    "text": "Jätkamiseks laadi leht uuesti. Edenemine on serveris salvestatud.",
+    "reload": "Laadi uuesti"
+  },
+  "a11y": {
+    "skip": "Mine sisu juurde",
+    "mainNav": "Peamenüü"
   }
 }

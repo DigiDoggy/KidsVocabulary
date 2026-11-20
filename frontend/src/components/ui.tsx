@@ -12,7 +12,7 @@ export function Spinner({ label }: { label?: string }) {
   );
 }
 
-/** Message for a failed request: a localised text per error code, plus the server's detail. */
+/** A localised text for a failed request, chosen by the error code. */
 export function errorText(error: unknown, t: (key: string) => string, has: (key: string) => boolean): string {
   if (error instanceof ApiError) {
     const key = `errors.${error.code}`;
@@ -21,7 +21,11 @@ export function errorText(error: unknown, t: (key: string) => string, has: (key:
   return t('errors.generic');
 }
 
-export function ErrorMessage({ error }: { error: unknown }) {
+/**
+ * Shows a failed request: the localised message, the server's own (English) explanation folded away
+ * under "details", and a retry button when the caller can repeat the request.
+ */
+export function ErrorMessage({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { t, has } = useI18n();
   if (!error) {
     return null;
@@ -29,8 +33,42 @@ export function ErrorMessage({ error }: { error: unknown }) {
   const detail = error instanceof ApiError && error.status !== 0 ? error.message : null;
   return (
     <div className="alert alert--error" role="alert">
-      <div>{errorText(error, t, has)}</div>
-      {detail && <div className="alert__detail">{detail}</div>}
+      <div className="alert__row">
+        <span>{errorText(error, t, has)}</span>
+        {onRetry && (
+          <button type="button" className="btn btn--small btn--ghost" onClick={onRetry}>
+            {t('common.retry')}
+          </button>
+        )}
+      </div>
+      {detail && (
+        <details className="alert__detail">
+          <summary>{t('common.details')}</summary>
+          {detail}
+        </details>
+      )}
+    </div>
+  );
+}
+
+/** Tells the user that the device is offline; requests are retried when the connection is back. */
+export function OfflineBanner() {
+  const { t } = useI18n();
+  const [online, setOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine));
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, []);
+  if (online) return null;
+  return (
+    <div className="offline" role="status">
+      {t('errors.offline')}
     </div>
   );
 }
@@ -129,16 +167,49 @@ export function useAction(): [
   return [run, busy, error, () => setError(null)];
 }
 
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/** A dialog that keeps keyboard focus inside while open and gives it back to the opener on close. */
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const opener = document.activeElement as HTMLElement | null;
+    if (!box.current?.contains(document.activeElement)) {
+      box.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    }
+    return () => opener?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'Tab' && box.current) {
+        const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
   return (
     <div className="modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal__box" role="dialog" aria-modal="true" aria-label={title}>
-        <h2 className="modal__title">{title}</h2>
+      <div ref={box} className="modal__box" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <h2 id={titleId} className="modal__title">
+          {title}
+        </h2>
         {children}
       </div>
     </div>

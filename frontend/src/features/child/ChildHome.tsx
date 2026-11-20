@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import type { HomeMonth, HomeWeek } from '../../api/types';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useChildContext } from './ChildLayout';
 import { Stars } from './Stars';
 
 export function ChildHome() {
   const { t } = useI18n();
   const { home } = useChildContext();
+  usePageTitle(home.child.name);
   return (
     <div className="kid__page">
       <h1 className="kid__hello">{t('kid.hello', { name: home.child.name })}</h1>

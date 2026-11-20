@@ -5,10 +5,10 @@ import ru from './locales/ru.json';
 
 type Messages = { [key: string]: string | Messages };
 
-/** Languages the parent can pick for the parent UI. */
-export const LANGUAGES = ['ru', 'en'] as const;
-/** Every catalog; Estonian covers the child UI for now, the rest falls back to English. */
-export type UiLanguage = (typeof LANGUAGES)[number] | 'et';
+/** Languages of the UI, in the order shown by the language switcher. */
+export const LANGUAGES = ['ru', 'et', 'en'] as const;
+/** Every UI language has a complete catalog; English is the fallback for missing keys. */
+export type UiLanguage = (typeof LANGUAGES)[number];
 
 const CATALOGS: Record<UiLanguage, Messages> = { en, ru, et };
 const FALLBACK: UiLanguage = 'en';

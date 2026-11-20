@@ -2,19 +2,22 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login, register } from '../../api/client';
 import { ApiError } from '../../api/http';
-import { ErrorMessage, Field, useAction } from '../../components/ui';
+import { ErrorMessage, Field, OfflineBanner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { usePageTitle } from '../../lib/a11y';
 
 const PIN_PATTERN = /^\d{4,6}$/;
 
 function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useI18n();
+  usePageTitle(title);
   return (
     <main className="auth">
       <div className="auth__top">
         <LanguageSwitcher />
       </div>
+      <OfflineBanner />
       <div className="auth__box">
         <p className="auth__brand">{t('app.name')}</p>
         <h1 className="auth__title">{title}</h1>

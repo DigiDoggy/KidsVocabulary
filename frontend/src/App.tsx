@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Spinner } from './components/ui';
 import { LoginPage, RegisterPage } from './features/auth/AuthPages';
 import { ChildHome } from './features/child/ChildHome';
@@ -67,11 +68,13 @@ export function AppRoutes() {
 export function App({ initialLang }: { initialLang?: UiLanguage }) {
   return (
     <I18nProvider initialLang={initialLang}>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
     </I18nProvider>
   );
 }

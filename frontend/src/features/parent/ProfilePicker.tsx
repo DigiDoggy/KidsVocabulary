@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { listChildren, switchToChild } from '../../api/client';
 import { ErrorMessage, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 
 /** "Who is training?": hands the tablet over to one of the children (the route guard opens child mode). */
@@ -9,6 +10,7 @@ export function ProfilePicker() {
   const { t } = useI18n();
   const children = useLoad(listChildren, []);
   const [run, busy, error] = useAction();
+  usePageTitle(t('picker.title'));
 
   return (
     <div className="picker">

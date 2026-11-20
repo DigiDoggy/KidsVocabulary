@@ -14,6 +14,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
+    // let the contrast test read the stylesheet as text
+    css: { include: [/styles\.css/] },
   },
 });

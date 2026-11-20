@@ -45,5 +45,12 @@ export function useLoad<T>(loader: () => Promise<T>, deps: DependencyList): Load
   }, [load, generation]);
 
   const reload = useCallback(() => setGeneration((g) => g + 1), []);
+
+  // a request that failed while offline is repeated as soon as the connection is back
+  useEffect(() => {
+    if (!error) return;
+    window.addEventListener('online', reload);
+    return () => window.removeEventListener('online', reload);
+  }, [error, reload]);
   return { data, error, loading, reload, setData };
 }

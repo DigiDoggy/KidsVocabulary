@@ -5,6 +5,7 @@ import { ApiError } from '../../api/http';
 import type { AnswerResponse, CurrentItem, TrainingSession } from '../../api/types';
 import { ErrorMessage, Spinner } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { useChildContext } from './ChildLayout';
 import { Stars } from './Stars';
@@ -31,7 +32,7 @@ export function TrainingPage() {
   if (session.error) {
     return (
       <div className="kid__page">
-        <ErrorMessage error={session.error} />
+        <ErrorMessage error={session.error} onRetry={session.reload} />
         <BackHome />
       </div>
     );
@@ -42,7 +43,8 @@ export function TrainingPage() {
 
 function Trainer({ initial }: { initial: TrainingSession }) {
   const { t, formatNumber } = useI18n();
-  const { reloadHome } = useChildContext();
+  const { reloadHome, home } = useChildContext();
+  usePageTitle(t('kid.trainingTitle'));
   const [item, setItem] = useState<CurrentItem | null>(initial.current);
   const [points, setPoints] = useState(initial.points);
   const [phase, setPhase] = useState<Phase>(
@@ -188,17 +190,20 @@ function Trainer({ initial }: { initial: TrainingSession }) {
     <div className="kid__page train">
       <div className="train__status">
         <span>{t('kid.roundLabel', { n: item.round })}</span>
-        <span className="train__dots" aria-label={t('kid.wordOf', { n: item.position, total: item.roundSize })}>
+        <span className="train__dots" role="img" aria-label={t('kid.wordOf', { n: item.position, total: item.roundSize })}>
           {Array.from({ length: item.roundSize }, (_, i) => (
             <span key={i} className={`train__dot${i < done ? ' is-done' : i === done ? ' is-current' : ''}`} />
           ))}
         </span>
         <span className="train__points">
-          <span aria-hidden="true">⭐</span> {formatNumber(points)}
+          <span aria-hidden="true">⭐</span>
+          <span className="visually-hidden">{t('kid.starsLabel')}</span> {formatNumber(points)}
         </span>
       </div>
 
-      <p className="train__prompt">{item.prompt}</p>
+      <p className="train__prompt" lang={home.child.nativeLang}>
+        {item.prompt}
+      </p>
 
       {feedback === 'wrong' && phase.kind === 'wrong' ? (
         <div className="train__reveal" role="status">
@@ -223,6 +228,7 @@ function Trainer({ initial }: { initial: TrainingSession }) {
           ref={input}
           className={`train__input${feedback ? ` is-${feedback}` : ''}`}
           aria-label={t('kid.answerLabel')}
+          lang={home.child.targetLang}
           value={answer}
           readOnly={phase.kind !== 'question'}
           onChange={(e) => setAnswer(e.target.value)}

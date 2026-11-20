@@ -1,12 +1,18 @@
 # KidsVocabulary
 
 A web application that helps children learn foreign-language words, with a focus on spelling.
-Architecture and domain decisions are described in [docs/DESIGN.md](docs/DESIGN.md).
+
+A parent prepares a weekly word set (by hand, with AI suggestions, or both) and hands the tablet to the
+child. The child spells each word until every word is right; points add up over a four-week "month" that
+ends with a report and the reward agreed in advance. The first target language is English; the child's
+native language can be Russian or Estonian.
+
+Architecture, domain rules and the API are described in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Run with Docker
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # set JWT_SECRET (openssl rand -base64 48) so sign-ins survive a restart
 docker compose up --build
 ```
 
@@ -15,6 +21,23 @@ docker compose up --build
 - Health: http://localhost:8080/actuator/health
 
 Stop: `docker compose down`. Stop and delete database data: `docker compose down -v`.
+
+## Using the app
+
+1. **Register** with an e-mail, a password and a 4–6 digit parent PIN.
+2. **Add a child**: name, birth date, level (A0–A2), native language and the default number of words per week.
+3. **Prepare a week** on the child's page, for this week or from next Monday:
+   add words by hand (with extra accepted spellings such as *color, colour*), let the app fill up the set
+   (optionally on a topic), replace or remove words. Hard words from the previous month are added
+   automatically and cannot be removed.
+4. **Launch** the set. A set for this week starts at once; a set for next week starts on Monday.
+5. **Hand over** the tablet ("Child mode" → pick the child). The child sees everything in their native
+   language, trains, gets hints and sees the right spelling after a mistake. Leaving the child mode needs
+   the PIN.
+6. **Follow progress**: points per week, per-word statistics, and a monthly report with hard and unlearned
+   words once the fourth week is closed. Set the month's reward on the child's page.
+
+The parent interface is available in Russian, Estonian and English (language switcher in the header).
 
 ## AI word suggestions (optional)
 
@@ -29,6 +52,7 @@ AI_API_KEY=your-key
 
 Generated words are validated, stored in the shared dictionary and reused. If the provider fails or
 its quota runs out, the app falls back to the dictionary and retries the provider after 5 minutes.
+Only the child's age, level, languages, topic and words to avoid are sent — never names or other personal data.
 
 ## Local development (database in Docker)
 
@@ -45,13 +69,40 @@ cd frontend && npm install && npm run dev     # http://localhost:5173, /api is p
 ```bash
 cd backend && ./mvnw test           # all tests, including integration tests (requires Docker / Testcontainers)
 cd backend && ./mvnw test -Pfast    # without integration tests
-cd frontend && npm test
+cd frontend && npm test             # unit and component tests, accessibility checks (axe, colour contrast)
 ```
+
+End-to-end smoke tests (Playwright) run against a running stack, on a tablet and a desktop viewport:
+
+```bash
+docker compose up -d --build
+cd frontend && npx playwright install chromium   # once
+npm run e2e                                      # E2E_BASE_URL=... to test another deployment
+```
+
+They register a fresh parent account (`e2e-…@example.test`) on every run, build and launch a week,
+train it as the child and return to parent mode with the PIN.
+
+The domain core (`com.kidsvocab.core`) is held at 100% line and branch coverage by a JaCoCo gate.
 
 ## Structure
 
 ```
-backend/    Spring Boot 3, Java 21, Flyway, PostgreSQL
-frontend/   React + TypeScript (Vite); served by nginx in Docker, /api proxied to the backend
-docs/       design documentation
+backend/     Spring Boot 3, Java 21, Flyway, PostgreSQL
+  core/      pure domain logic: answer checking, hints, scoring, rounds, week closing, monthly report
+  app/       services, scheduling, AI orchestration
+  web/       REST controllers (RFC 7807 errors), security/  JWT and parent/child modes
+frontend/    React + TypeScript (Vite); served by nginx in Docker, /api proxied to the backend
+  src/api/        HTTP client (in-memory access token, refresh cookie), DTO types
+  src/features/   auth, parent (children, week builder, reports), child (home, training)
+  src/i18n/       ru / et / en catalogs
+  e2e/            Playwright smoke tests
+docs/        design documentation
 ```
+
+## Accessibility
+
+The UI targets WCAG 2.1 AA: labelled form controls with linked hints and errors, keyboard navigation with a
+skip link and focus moved to the content after navigation, dialogs that keep and return focus, page titles,
+text contrast of at least 4.5:1 (checked by a test), large touch targets in the child mode and no animations
+when the system asks for reduced motion.

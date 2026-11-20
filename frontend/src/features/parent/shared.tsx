@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { MonthResult, Outcome, WeekStatus, WordSource } from '../../api/types';
 import { Badge } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -36,16 +37,18 @@ export function SourceBadge({ source }: { source: WordSource }) {
 
 export function PointsBar({ points, max }: { points: number | null; max: number | null }) {
   const { t, formatNumber } = useI18n();
+  const labelId = useId();
   const value = points ?? 0;
   const percent = max ? Math.min(100, (value / max) * 100) : 0;
   return (
     <div className="points">
-      <div className="points__label">
+      <div className="points__label" id={labelId}>
         {t('common.points', { points: formatNumber(value), max: formatNumber(max) })}
       </div>
       <div
         className="points__bar"
         role="progressbar"
+        aria-labelledby={labelId}
         aria-valuemin={0}
         aria-valuemax={max ?? 0}
         aria-valuenow={value}

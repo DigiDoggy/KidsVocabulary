@@ -2,18 +2,20 @@
   --bg: #f7f5ef;
   --surface: #ffffff;
   --fg: #1f2933;
-  --muted: #627080;
+  --muted: #56616f;
   --line: #e4e1d8;
-  --primary: #2f6fde;
+  --primary: #2a63c7;
   --primary-fg: #ffffff;
   --accent: #f08c00;
-  --ok: #2f9e44;
+  --accent-fg: #1f2933;
+  --accent-text: #9c4a00;
+  --ok: #237a35;
   --ok-bg: #e6f6e9;
-  --warn: #b35c00;
+  --warn: #8f4a00;
   --warn-bg: #fff3df;
-  --error: #d6336c;
+  --error: #b8215a;
   --error-bg: #fde8ef;
-  --info: #1971c2;
+  --info: #1864ab;
   --info-bg: #e3f0fc;
   --neutral-bg: #eeece6;
   --radius: 14px;
@@ -113,7 +115,7 @@ a:focus-visible {
 
 .btn--accent {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 
 .btn--ghost {
@@ -472,7 +474,7 @@ a:focus-visible {
 
 .badge--accent {
   background: var(--warn-bg);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .badge--ok {
@@ -1089,7 +1091,7 @@ a:focus-visible {
   height: 96px;
   border-radius: 50%;
   background: var(--warn-bg);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 2.6rem;
   font-weight: 800;
 }
@@ -1164,4 +1166,55 @@ a:focus-visible {
   .action-bar__end {
     margin-left: 0;
   }
+}
+
+/* --- accessibility helpers --- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 30;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+main:focus {
+  outline: none;
+}
+
+.alert__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alert__detail summary {
+  cursor: pointer;
+}
+
+.offline {
+  padding: 10px 16px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  text-align: center;
+  font-weight: 600;
 }

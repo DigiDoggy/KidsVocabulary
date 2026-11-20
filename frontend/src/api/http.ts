@@ -115,7 +115,20 @@ export async function request<T>(method: string, path: string, options: RequestO
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/** Reads are safe to repeat, so a GET that hit a network failure is tried once more after this pause. */
+export const GET_RETRY_DELAY_MS = 800;
+
 async function send(method: string, path: string, body: unknown, auth: boolean): Promise<Response> {
+  try {
+    return await sendOnce(method, path, body, auth);
+  } catch (e) {
+    if (method !== 'GET' || !(e instanceof ApiError) || e.code !== 'NETWORK') throw e;
+    await new Promise((resolve) => setTimeout(resolve, GET_RETRY_DELAY_MS));
+    return sendOnce(method, path, body, auth);
+  }
+}
+
+async function sendOnce(method: string, path: string, body: unknown, auth: boolean): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';

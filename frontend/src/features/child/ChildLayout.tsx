@@ -3,8 +3,9 @@ import { Outlet, useOutletContext } from 'react-router-dom';
 import { myHome, switchToParent } from '../../api/client';
 import { ApiError } from '../../api/http';
 import type { Home } from '../../api/types';
-import { ErrorMessage, Modal, Spinner, useAction } from '../../components/ui';
+import { ErrorMessage, Modal, OfflineBanner, Spinner, useAction } from '../../components/ui';
 import { I18nProvider, useI18n, type UiLanguage } from '../../i18n/I18nProvider';
+import { FocusOnNavigate } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 
 export interface ChildContext {
@@ -27,7 +28,7 @@ export function ChildLayout() {
   const home = useLoad(myHome, []);
 
   if (!home.data) {
-    return <main className="kid">{home.error ? <ErrorMessage error={home.error} /> : <Spinner />}</main>;
+    return <main className="kid">{home.error ? <ErrorMessage error={home.error} onRetry={home.reload} /> : <Spinner />}</main>;
   }
   return (
     <I18nProvider fixedLang={childLanguage(home.data.child.nativeLang)}>
@@ -40,12 +41,14 @@ function ChildShell({ home, reloadHome }: ChildContext) {
   const { t } = useI18n();
   const [pinOpen, setPinOpen] = useState(false);
   return (
-    <main className="kid">
+    <main className="kid" id="kid-main" tabIndex={-1}>
+      <FocusOnNavigate targetId="kid-main" />
       <header className="kid__top">
         <button type="button" className="btn btn--ghost btn--small kid__parent" onClick={() => setPinOpen(true)}>
           <span aria-hidden="true">🔒</span> {t('kid.parentMode')}
         </button>
       </header>
+      <OfflineBanner />
       <Outlet context={{ home, reloadHome } satisfies ChildContext} />
       {pinOpen && <PinDialog onClose={() => setPinOpen(false)} />}
     </main>

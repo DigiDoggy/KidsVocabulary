@@ -9,7 +9,9 @@
     "edit": "Edit",
     "yes": "yes",
     "language": "Language",
-    "points": "{points} of {max} points"
+    "points": "{points} of {max} points",
+    "retry": "Try again",
+    "details": "Details"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -23,12 +25,14 @@
     "INVALID_PIN": "Wrong PIN.",
     "PIN_LOCKED": "Too many wrong PINs. Parent mode is locked for 5 minutes.",
     "FORBIDDEN": "Not allowed in this mode.",
-    "SESSION_CLOSED": "This training session is already closed."
+    "SESSION_CLOSED": "This training session is already closed.",
+    "offline": "No internet connection. The app will continue when it is back."
   },
   "languages": {
     "ui": {
       "ru": "Русский",
-      "en": "English"
+      "en": "English",
+      "et": "Eesti"
     },
     "short": {
       "ru": "RU",
@@ -312,6 +316,17 @@
     "firstTry_one": "{count} of {total} spelled right the first time.",
     "firstTry_other": "{count} of {total} spelled right the first time.",
     "counts": "These stars count towards the month.",
-    "home": "Home"
+    "home": "Home",
+    "trainingTitle": "Training",
+    "starsLabel": "Stars:"
+  },
+  "crash": {
+    "title": "Something went wrong",
+    "text": "Reload the page to continue. Your progress is saved on the server.",
+    "reload": "Reload"
+  },
+  "a11y": {
+    "skip": "Skip to content",
+    "mainNav": "Main"
   }
 }

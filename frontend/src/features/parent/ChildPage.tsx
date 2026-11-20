@@ -13,6 +13,7 @@ import type { Home, HomeWeek, MonthSummary, WeekSummary } from '../../api/types'
 import { Card, ErrorMessage, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { weekStarts } from '../../lib/dates';
+import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { useParentContext } from './ParentLayout';
 import { MonthResultBadge, PointsBar, WeekStatusBadge } from './shared';
@@ -28,8 +29,9 @@ export function ChildPage() {
     [childId],
   );
   const [openChildMode, switching, switchError] = useAction();
+  usePageTitle(overview.data?.[0].name);
 
-  if (overview.error) return <ErrorMessage error={overview.error} />;
+  if (overview.error) return <ErrorMessage error={overview.error} onRetry={overview.reload} />;
   if (!overview.data) return <Spinner />;
   const [child, home, weeks, months] = overview.data;
 
