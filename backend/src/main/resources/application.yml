@@ -40,8 +40,15 @@ app:
     # how often weeks are expired/activated and automatic drafts are prepared
     week-lifecycle-interval: PT15M
   ai:
+    # none | gemini | openai-compatible (Groq, OpenRouter, Mistral, ...)
     provider: ${AI_PROVIDER:none}
     api-key: ${AI_API_KEY:}
+    # empty = provider default (Gemini: gemini-flash-lite-latest; openai-compatible: Groq with openai/gpt-oss-120b)
+    base-url: ${AI_BASE_URL:}
+    model: ${AI_MODEL:}
+    timeout: 20s
+    # after an error or exhausted quota the provider is skipped for this long
+    cooldown: 5m
   security:
     # At least 32 bytes. If empty, a random key is generated at startup (tokens do not survive a restart).
     jwt-secret: ${JWT_SECRET:}

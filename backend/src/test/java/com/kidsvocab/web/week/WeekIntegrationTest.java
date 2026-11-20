@@ -82,12 +82,12 @@ class WeekIntegrationTest extends IntegrationTest {
         assertThat(week.get("words").get(0).get("conceptId").asLong()).isEqualTo(seedDog);
         assertThat(week.get("words").get(0).get("source").asText()).isEqualTo("MANUAL");
 
-        week = read(addWord(weekId, "vihmavari", "umbrella", List.of("Brolly")).andExpect(status().isOk()));
-        JsonNode umbrella = week.get("words").get(1);
-        assertThat(umbrella.get("answer").asText()).isEqualTo("umbrella");
-        assertThat(umbrella.get("extraAnswers").get(0).asText()).isEqualTo("brolly");
+        week = read(addWord(weekId, "lumehelves", "snowflake", List.of("Flake")).andExpect(status().isOk()));
+        JsonNode snowflake = week.get("words").get(1);
+        assertThat(snowflake.get("answer").asText()).isEqualTo("snowflake");
+        assertThat(snowflake.get("extraAnswers").get(0).asText()).isEqualTo("flake");
         assertThat(jdbc.queryForObject("select origin from concept where id = ?", String.class,
-                umbrella.get("conceptId").asLong())).isEqualTo("MANUAL");
+                snowflake.get("conceptId").asLong())).isEqualTo("MANUAL");
 
         week = read(call(post("/api/v1/weeks/" + weekId + "/suggest")).andExpect(jsonPath("$.missing").value(0)));
         List<Long> concepts = new ArrayList<>();

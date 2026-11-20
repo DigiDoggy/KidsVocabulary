@@ -398,7 +398,7 @@ Implemented in `com.kidsvocab.core` (`text`, `scoring`, `training`, `week`, `mon
 
 The load is tiny: 1–3 requests per child per week, ~1–2 KB per response, so any free tier is enough. The key criterion is **Estonian language quality**.
 
-> Free-tier limits change often. The figures below are approximate and must be re-checked against current documentation before implementation.
+> Free-tier limits change often and are shown per project in the provider's console (Google AI Studio, Groq console); Google no longer publishes a fixed table. The figures below are orders of magnitude only — check the console before relying on them.
 
 | Provider | Models | Limits (order of magnitude) | Pros | Cons |
 |---|---|---|---|---|
@@ -410,25 +410,25 @@ The load is tiny: 1–3 requests per child per week, ~1–2 KB per response, so 
 
 **Recommendation:** primary provider **Gemini Flash** (structured output + best Estonian), fallback **Groq**.
 
-Implementation:
+Implementation (package `com.kidsvocab.ai`, orchestration in `AiFirstWordSource`):
 
 ```java
 public interface WordSuggestionProvider {
     String id();
-    List<SuggestedWord> suggest(SuggestionRequest request) throws ProviderUnavailableException;
+    List<SuggestedWord> suggest(SuggestionRequest request);   // throws ProviderException
 }
-record SuggestionRequest(int childAge, Level level, Optional<String> topic, int count,
-                         Lang nativeLang, Lang targetLang, Set<String> excludeTargetWords) {}
-record SuggestedWord(String source, String target, String topic) {}
+record SuggestionRequest(Integer childAge, Level level, String topic, List<String> topics, int count,
+                         String nativeLang, String targetLang, Set<String> excludeTargetWords) {}
 ```
 
-- `GeminiWordSuggestionProvider` and `OpenAiCompatibleWordSuggestionProvider` (Groq/OpenRouter/Mistral — one class, different `base-url`/`model`).
-- Provider selection: `app.ai.provider=gemini|openai-compatible|none`; the key is `AI_API_KEY` in `.env`.
-- `WordSuggestionService`: AI → validation → one retry (with an extended exclusion list) → fill up from the local dictionary (`DictionaryWordSource`). 10 s timeout, circuit breaker (Resilience4j).
-- **Response validation:** JSON matches the schema; exactly the expected fields; non-empty strings; only letters of the language's alphabet (ru — Cyrillic; et — Latin + õäöüšž; en — a–z) plus space/hyphen/apostrophe; length ≤ 20, at most 2 words; source ≠ target; no duplicates within the response, with already learned words (`child_word`), with the current month or set; stop list; topic from the whitelist.
-- Valid words are saved to `concept`/`word_form` (origin = AI): a match on the normalised form reuses the existing concept.
-- Only age (a number), level, languages, topic, count and the exclusion list are sent to the AI — **no names or personal data**.
-- Tests: WireMock for HTTP (success, invalid JSON, duplicates, stop-list words, 429, timeout) and a Mockito mock provider for the service (fallback, retry).
+- `GeminiWordSuggestionProvider` (`generateContent` with a response JSON schema) and `OpenAiCompatibleWordSuggestionProvider` (`/chat/completions` in JSON mode; Groq by default, OpenRouter/Mistral via `AI_BASE_URL`). Both share one prompt (`SuggestionPrompt`) and one parser that accepts `{"words": [...]}`, a bare array or a fenced code block.
+- Configuration: `AI_PROVIDER=none|gemini|openai-compatible`, `AI_API_KEY`, optional `AI_BASE_URL`, `AI_MODEL`. Defaults: `gemini-flash-lite-latest` (an alias that follows the current Flash-Lite model, since model names change often; it answers in 1–3 s, while the full Flash model took 30–60 s on the free tier) and `openai/gpt-oss-120b` on Groq. A provider without a key fails at startup; `none` uses the dictionary only.
+- Errors: HTTP 429 → `RATE_LIMITED`, network/timeout/other HTTP errors → `UNAVAILABLE`, unusable answer → `INVALID_RESPONSE`. 20 s timeout. After `UNAVAILABLE`/`RATE_LIMITED` the provider is skipped for 5 minutes (`app.ai.cooldown`); an invalid answer is retried once.
+- Flow: ask for the missing count plus a margin → validate (`core.suggestion.SuggestionValidator`) → store → ask once more if still short → fill the rest from `DictionaryWordSource`.
+- **Validation:** both parts present; only letters of the language's alphabet (ru — Cyrillic; et — Latin + õäöüšž; en — a–z) plus space/hyphen/apostrophe; ≤ 20 characters and ≤ 2 words; translation ≠ word; stop list (`ai/stop-words.txt`); no duplicates within the answer; nothing the child studied, has queued or has in the set. A topic outside the whitelist (dictionary topics) is dropped, not the word.
+- **Storage:** a known pair reuses its concept; otherwise a shared `AI` concept is created — unless its native word is already the primary form of another shared concept (that would make prompts ambiguous).
+- Only age (a number), level, languages, topic(s), count and an exclusion list of target words are sent — **no names or personal data**. Every call is logged in `ai_request_log` (status, counts, latency, error) without prompts.
+- Tests: providers against a mocked HTTP server (`MockRestServiceServer`: request shape, parsing, 429/500/timeout, invalid JSON); `AiFirstWordSource` end to end with a mocked provider (storage, reuse, ambiguity, top-up, cooldown, retry, request contents).
 
 ---
 

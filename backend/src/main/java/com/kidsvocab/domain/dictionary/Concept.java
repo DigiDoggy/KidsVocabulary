@@ -41,6 +41,12 @@ public class Concept {
     protected Concept() {
     }
 
+    /** Difficulty by length of the target word: 1 (up to 4 characters), 2 (up to 7), 3 (longer). */
+    public static int difficultyOf(String target) {
+        int length = target.strip().length();
+        return length <= 4 ? 1 : length <= 7 ? 2 : 3;
+    }
+
     public Concept(String topic, int difficulty, Origin origin, Long ownerParentId, Instant createdAt) {
         this.topic = topic;
         this.difficulty = difficulty;

@@ -119,6 +119,25 @@ public class DictionaryQueries {
                 """, new MapSqlParameterSource("child", childId), Long.class));
     }
 
+    /** True if a shared concept already uses this word as its primary form (a new one would be ambiguous). */
+    public boolean sharedPrimaryExists(String lang, String normalized) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from word_form f join concept c on c.id = f.concept_id
+                where c.owner_parent_id is null and f.lang = :lang and f.is_primary and f.normalized = :n
+                """, new MapSqlParameterSource().addValue("lang", lang).addValue("n", normalized), Integer.class);
+        return count != null && count > 0;
+    }
+
+    /** Primary target-language words of the given concepts. */
+    public Set<String> primaryWords(Collection<Long> conceptIds, String lang) {
+        if (conceptIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(jdbc.queryForList("""
+                select normalized from word_form where concept_id in (:ids) and lang = :lang and is_primary
+                """, new MapSqlParameterSource().addValue("ids", conceptIds).addValue("lang", lang), String.class));
+    }
+
     /** Concepts used by any week of the given month (to avoid repeating a word within a month). */
     public Set<Long> conceptsInMonth(long monthId) {
         return Set.copyOf(jdbc.queryForList("""

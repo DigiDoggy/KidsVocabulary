@@ -1,0 +1,31 @@
+# Target-language (English) words that must never be suggested to a child, one per line.
+# Matched against each word of a suggestion after normalisation.
+alcohol
+beer
+blood
+bomb
+casino
+cigarette
+corpse
+dead
+death
+drug
+drugs
+gun
+guns
+kill
+murder
+pistol
+poison
+rifle
+sex
+sexy
+smoke
+smoking
+suicide
+tobacco
+vodka
+war
+weapon
+whisky
+wine

@@ -16,6 +16,20 @@ docker compose up --build
 
 Stop: `docker compose down`. Stop and delete database data: `docker compose down -v`.
 
+## AI word suggestions (optional)
+
+Without configuration, weekly sets are filled from the built-in dictionary. To let an LLM propose words,
+set in `.env`:
+
+```bash
+AI_PROVIDER=gemini            # or openai-compatible (Groq by default)
+AI_API_KEY=your-key
+# AI_MODEL=..., AI_BASE_URL=... to override the defaults
+```
+
+Generated words are validated, stored in the shared dictionary and reused. If the provider fails or
+its quota runs out, the app falls back to the dictionary and retries the provider after 5 minutes.
+
 ## Local development (database in Docker)
 
 Requires Java 21 and Node 22.

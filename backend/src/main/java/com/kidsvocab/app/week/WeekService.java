@@ -368,9 +368,8 @@ public class WeekService {
         Locale nativeLocale = locale(child.getNativeLang());
         Locale targetLocale = locale(child.getTargetLang());
         String targetText = target.strip();
-        int difficulty = targetText.length() <= 4 ? 1 : targetText.length() <= 7 ? 2 : 3;
-        Concept concept = concepts.save(new Concept(null, difficulty, Concept.Origin.MANUAL, child.getParentId(),
-                clock.instant()));
+        Concept concept = concepts.save(new Concept(null, Concept.difficultyOf(targetText), Concept.Origin.MANUAL,
+                child.getParentId(), clock.instant()));
         forms.save(new WordForm(concept.getId(), child.getNativeLang(), source.strip(),
                 AnswerNormalizer.normalize(source, nativeLocale), true));
         String primary = AnswerNormalizer.normalize(target, targetLocale);
