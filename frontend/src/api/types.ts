@@ -181,14 +181,16 @@ export type SessionKind = 'FIRST_PASS' | 'PRACTICE';
 export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED';
 export type Verdict = 'CORRECT' | 'WRONG' | 'IGNORED';
 
-/** The word to spell now. `hintMask` is the primary answer with hidden letters as `_`. */
+/**
+ * The word to spell now. `hintMask` is null until the first hint (the length of the word is a hint
+ * too); after that it is the primary answer with hidden letters as `_`.
+ */
 export interface CurrentItem {
   wordId: number;
   round: number;
   position: number;
   prompt: string;
-  answerLength: number;
-  hintMask: string;
+  hintMask: string | null;
   hintAvailable: boolean;
   roundSize: number;
   remainingInRound: number;

@@ -127,8 +127,7 @@ class TrainingSessionTest {
         assertThat(item.round()).isEqualTo(1);
         assertThat(item.position()).isEqualTo(1);
         assertThat(item.prompt()).isEqualTo(first.prompt());
-        assertThat(item.answerLength()).isEqualTo(first.primaryAnswer().length());
-        assertThat(item.hintMask()).doesNotContainPattern("[a-z]");
+        assertThat(item.hintMask()).as("the length stays secret until the first hint").isNull();
         assertThat(item.hintAvailable()).isTrue();
         assertThat(item.roundSize()).isEqualTo(4);
         assertThat(item.remainingInRound()).isEqualTo(4);
@@ -142,39 +141,81 @@ class TrainingSessionTest {
     // --- hints ----------------------------------------------------------------------------------
 
     @Test
-    void hintRevealsOneMoreLetterUpToAllButOne() {
+    void firstHintShowsOnlyTheLengthThenEachHintRevealsOneLetter() {
         TrainingSession session = TrainingSession.start(List.of(card(2, "kass", "cat")), SEED);
 
-        assertThat(session.hint(2, 1)).isEqualTo("c__");
+        assertThat(session.hint(2, 1)).isEqualTo("___");
+        assertThat(stateOf(session, 2).hintUsed()).as("the length step already counts as a hint").isTrue();
         assertThat(session.current().orElseThrow().hintAvailable()).isTrue();
-        assertThat(session.hint(2, 1)).isEqualTo("ca_");
+
+        String one = session.hint(2, 1);
+        assertThat(one).hasSize(3).matches(letterOrGap("cat")).matches(revealed(1));
+        assertThat(session.current().orElseThrow().hintAvailable()).isTrue();
+
+        String two = session.hint(2, 1);
+        assertThat(two).matches(letterOrGap("cat")).matches(revealed(2));
+        for (int i = 0; i < one.length(); i++) {
+            if (one.charAt(i) != '_') assertThat(two.charAt(i)).as("revealed letters stay").isEqualTo(one.charAt(i));
+        }
         assertThat(session.current().orElseThrow().hintAvailable()).isFalse();
-        assertThat(session.hint(2, 1)).isEqualTo("ca_");
-        assertThat(session.current().orElseThrow().hintMask()).isEqualTo("ca_");
-        assertThat(stateOf(session, 2).hintUsed()).isTrue();
+
+        assertThat(session.hint(2, 1)).as("never the whole word").isEqualTo(two);
+        assertThat(session.current().orElseThrow().hintMask()).isEqualTo(two);
     }
 
     @Test
-    void revealedLettersResetInTheNextRoundButHintFlagSticks() {
+    void lettersAreRevealedAtRandomButReproduciblePositions() {
+        List<WordCard> week = List.of(card(9, "elevant", "elephant"));
+        Set<String> firstLetters = new java.util.HashSet<>();
+        for (long seed = 0; seed < 20; seed++) {
+            TrainingSession a = TrainingSession.start(week, seed);
+            TrainingSession b = TrainingSession.start(week, seed);
+            a.hint(9, 1);
+            b.hint(9, 1);
+            String mask = a.hint(9, 1);
+            assertThat(b.hint(9, 1)).as("same seed, same letter").isEqualTo(mask);
+            firstLetters.add(mask);
+        }
+        assertThat(firstLetters).as("not always the first letter").hasSizeGreaterThan(1);
+    }
+
+    @Test
+    void hintStepsResetInTheNextRoundButHintFlagSticks() {
         TrainingSession session = TrainingSession.start(List.of(card(2, "kass", "cat")), SEED);
+        session.hint(2, 1);
         session.hint(2, 1);
         session.submit(2, 1, "cot");
 
         CurrentItem item = session.current().orElseThrow();
         assertThat(item.round()).isEqualTo(2);
-        assertThat(item.hintMask()).isEqualTo("___");
+        assertThat(item.hintMask()).isNull();
+        assertThat(item.hintAvailable()).isTrue();
 
         session.submit(2, 2, "cat");
         assertThat(stateOf(session, 2)).isEqualTo(new WordState(2, 1, true, false, 2));
     }
 
     @Test
-    void hintIsUnavailableForOneLetterWordsAndCostsNothing() {
+    void oneLetterWordsGetOnlyTheLengthHint() {
         TrainingSession session = TrainingSession.start(List.of(card(6, "mina", "I")), SEED);
 
+        assertThat(session.current().orElseThrow().hintAvailable()).isTrue();
+        assertThat(session.hint(6, 1)).isEqualTo("_");
+        assertThat(stateOf(session, 6).hintUsed()).isTrue();
         assertThat(session.current().orElseThrow().hintAvailable()).isFalse();
         assertThat(session.hint(6, 1)).isEqualTo("_");
-        assertThat(stateOf(session, 6).hintUsed()).isFalse();
+    }
+
+    private static String letterOrGap(String word) {
+        StringBuilder regex = new StringBuilder();
+        for (char c : word.toCharArray()) {
+            regex.append('[').append(c).append("_]");
+        }
+        return regex.toString();
+    }
+
+    private static String revealed(int letters) {
+        return "^_*(?:[^_]_*){" + letters + "}$";
     }
 
     // --- robustness -----------------------------------------------------------------------------

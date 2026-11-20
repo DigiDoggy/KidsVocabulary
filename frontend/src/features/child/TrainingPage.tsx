@@ -219,9 +219,9 @@ function Trainer({ initial }: { initial: TrainingSession }) {
             />
           </div>
         </div>
-      ) : (
+      ) : item.hintMask !== null ? (
         <Letters word={item.hintMask} variant="mask" />
-      )}
+      ) : null}
 
       <form className="train__form" onSubmit={submit}>
         <input

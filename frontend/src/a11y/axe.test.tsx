@@ -89,7 +89,7 @@ describe('accessibility (axe)', () => {
       'GET /me/home': { child, week: { id: 5, status: 'ACTIVE', startDate: thisMonday, endDate: thisMonday, weekIndex: 1, wordCount: 2, points: 0, maxPoints: 4, firstPassOpen: false }, month: null },
       'POST /weeks/5/sessions': {
         id: 33, weekId: 5, kind: 'FIRST_PASS', status: 'IN_PROGRESS', round: 1, points: 0, maxPoints: 4, counts: true, words: [],
-        current: { wordId: 1, round: 1, position: 1, prompt: 'koer', answerLength: 3, hintMask: 'd__', hintAvailable: true, roundSize: 2, remainingInRound: 2 },
+        current: { wordId: 1, round: 1, position: 1, prompt: 'koer', hintMask: '_o_', hintAvailable: true, roundSize: 2, remainingInRound: 2 },
       },
       'POST /sessions/33/answers': { verdict: 'WRONG', correctAnswer: 'dog', showCorrectAnswerFor: 5, becameProblematic: false, roundFinished: false, sessionFinished: false, next: null, points: 0 },
     };

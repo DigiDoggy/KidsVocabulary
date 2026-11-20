@@ -25,8 +25,7 @@ function item(overrides: Partial<CurrentItem> = {}): CurrentItem {
     round: 1,
     position: 1,
     prompt: 'koer',
-    answerLength: 3,
-    hintMask: '___',
+    hintMask: null,
     hintAvailable: true,
     roundSize: 2,
     remainingInRound: 2,
@@ -128,15 +127,28 @@ describe('training screen', () => {
     expect(api.called('POST', '/sessions/33/answers')).toHaveLength(0);
   });
 
-  it('reveals letters with a hint until no more are available', async () => {
-    const api = renderTraining({ 'POST /sessions/33/hint': { hintMask: 'do_', hintAvailable: false } });
+  it('keeps the length secret until the first hint, then reveals letters', async () => {
+    const masks = [
+      { hintMask: '___', hintAvailable: true },
+      { hintMask: '_o_', hintAvailable: true },
+      { hintMask: '_og', hintAvailable: false },
+    ];
+    const api = renderTraining({ 'POST /sessions/33/hint': () => ({ body: masks.shift() }) });
 
-    expect(await screen.findByRole('img', { name: '3 tähte' })).toBeInTheDocument();
+    await screen.findByText('koer');
+    expect(screen.queryByRole('img', { name: /täh/ })).toBeNull();
+
     await userEvent.click(screen.getByRole('button', { name: /Vihje/ }));
+    expect(await screen.findByRole('img', { name: '3 tähte' })).toBeInTheDocument();
+    expect(screen.queryByText('o')).toBeNull();
 
-    await waitFor(() => expect(screen.getByText('d')).toBeInTheDocument());
-    expect(screen.getByText('o')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Vihje/ }));
+    expect(await screen.findByText('o')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Vihje/ }));
+    expect(await screen.findByText('g')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Vihje/ })).toBeDisabled();
+    expect(api.called('POST', '/sessions/33/hint')).toHaveLength(3);
     expect(api.called('POST', '/sessions/33/hint')[0].body).toEqual({ weekWordId: 1, round: 1 });
   });
 

@@ -59,7 +59,8 @@ class TrainingIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.counts").value(true))
                 .andExpect(jsonPath("$.current.round").value(1))
                 .andExpect(jsonPath("$.current.roundSize").value(3))
-                .andExpect(jsonPath("$.current.hintMask").exists()));
+                .andExpect(jsonPath("$.current.hintMask").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.current.answerLength").doesNotExist()));
         long sessionId = s.get("id").asLong();
 
         JsonNode last = null;
@@ -94,10 +95,13 @@ class TrainingIntegrationTest extends IntegrationTest {
         assertThat(wrong.get("correctAnswer").asText()).isNotBlank();
         assertThat(wrong.get("showCorrectAnswerFor").asInt()).isEqualTo(5);
         JsonNode third = current(sessionId);
-        as(child, post("/api/v1/sessions/" + sessionId + "/hint"), Map.of(
-                        "weekWordId", third.get("wordId").asLong(), "round", 1))
+        Map<String, Object> thirdHint = Map.of("weekWordId", third.get("wordId").asLong(), "round", 1);
+        as(child, post("/api/v1/sessions/" + sessionId + "/hint"), thirdHint)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hintMask").value(org.hamcrest.Matchers.matchesPattern("^[a-z]_+$")));
+                .andExpect(jsonPath("$.hintMask").value(org.hamcrest.Matchers.matchesPattern("^_+$")));
+        as(child, post("/api/v1/sessions/" + sessionId + "/hint"), thirdHint)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hintMask").value(org.hamcrest.Matchers.matchesPattern("^_*[a-z]_*$")));
         JsonNode endOfRound = answerCurrent(sessionId, true);
         assertThat(endOfRound.get("roundFinished").asBoolean()).isTrue();
         assertThat(endOfRound.get("next").get("round").asInt()).isEqualTo(2);
@@ -126,15 +130,17 @@ class TrainingIntegrationTest extends IntegrationTest {
         long sessionId = startSession(weekId);
         answerCurrent(sessionId, true);
         JsonNode second = current(sessionId);
-        as(child, post("/api/v1/sessions/" + sessionId + "/hint"),
-                Map.of("weekWordId", second.get("wordId").asLong(), "round", 1));
+        Map<String, Object> hint = Map.of("weekWordId", second.get("wordId").asLong(), "round", 1);
+        as(child, post("/api/v1/sessions/" + sessionId + "/hint"), hint);
+        String mask = read(as(child, post("/api/v1/sessions/" + sessionId + "/hint"), hint)).get("hintMask").asText();
+        assertThat(mask).matches("^_*[a-z]_*$");
 
         JsonNode resumed = read(as(child, post("/api/v1/weeks/" + weekId + "/sessions")));
 
         assertThat(resumed.get("id").asLong()).isEqualTo(sessionId);
         assertThat(resumed.get("current").get("wordId").asLong()).isEqualTo(second.get("wordId").asLong());
         assertThat(resumed.get("current").get("position").asInt()).isEqualTo(2);
-        assertThat(resumed.get("current").get("hintMask").asText()).matches("^[a-z]_+$");
+        assertThat(resumed.get("current").get("hintMask").asText()).as("same random letter after replay").isEqualTo(mask);
         as(child, get("/api/v1/me/home"))
                 .andExpect(jsonPath("$.week.firstPassOpen").value(true))
                 .andExpect(jsonPath("$.week.points").value(2.0));

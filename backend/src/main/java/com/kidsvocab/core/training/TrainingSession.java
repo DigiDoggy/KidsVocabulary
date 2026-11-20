@@ -17,8 +17,10 @@ import java.util.SplittableRandom;
  *   <li>Words spelled wrong move to the next round; the session ends when every word is solved.</li>
  *   <li>After {@value #PROBLEMATIC_AFTER_MISTAKES} wrong rounds a word becomes problematic and is
  *       placed by {@link RoundArranger}.</li>
- *   <li>A hint reveals one more letter of the current word; revealed letters reset each round,
- *       the "hint used" flag sticks to the word.</li>
+ *   <li>Hints come in steps: the first shows only how many letters the word has, each further step
+ *       reveals one more letter at a random position (reproducible from the seed, so a replayed
+ *       session shows the same letters). Steps reset each round; the "hint used" flag sticks to the
+ *       word.</li>
  *   <li>Submitting the same (word, round) again returns the stored result (idempotency).</li>
  *   <li>A blank answer is ignored and not counted as an attempt.</li>
  * </ul>
@@ -84,9 +86,8 @@ public final class TrainingSession {
         String answer = card.primaryAnswer();
         int position = slots.indexOf(slot) + 1;
         return Optional.of(new CurrentItem(
-                slot.wordId, round, position, card.prompt(), answer.codePointCount(0, answer.length()),
-                HintMask.mask(answer, slot.hintLetters),
-                slot.hintLetters < HintMask.maxRevealable(answer),
+                slot.wordId, round, position, card.prompt(), mask(slot, answer),
+                slot.hintSteps < maxHintSteps(answer),
                 slots.size(), slots.size() - position + 1));
     }
 
@@ -133,15 +134,32 @@ public final class TrainingSession {
         return result;
     }
 
-    /** Reveals one more letter of the current word and returns the new mask. */
+    /**
+     * Takes the next hint step for the current word and returns the new mask: the first step shows the
+     * word's length (all letters hidden), every further step reveals one more letter.
+     */
     public String hint(long wordId, int roundNo) {
         Slot slot = requireCurrent(wordId, roundNo);
         String answer = cards.get(wordId).primaryAnswer();
-        if (slot.hintLetters < HintMask.maxRevealable(answer)) {
-            slot.hintLetters++;
+        if (slot.hintSteps < maxHintSteps(answer)) {
+            slot.hintSteps++;
             progress.get(wordId).hintUsed = true;
         }
-        return HintMask.mask(answer, slot.hintLetters);
+        return mask(slot, answer);
+    }
+
+    /** The length step plus at most {@code letters - 1} revealed letters. */
+    private static int maxHintSteps(String answer) {
+        return 1 + HintMask.maxRevealable(answer);
+    }
+
+    /** No mask before the first hint step, so the length of the word stays unknown. */
+    private String mask(Slot slot, String answer) {
+        if (slot.hintSteps == 0) {
+            return null;
+        }
+        long letterSeed = seed ^ (slot.wordId * 0xBF58476D1CE4E5B9L) ^ (round * 0x94D049BB133111EBL);
+        return HintMask.mask(answer, HintMask.revealOrder(answer, letterSeed), slot.hintSteps - 1);
     }
 
     /** Stops an unfinished session, e.g. when the week is over. A completed session stays completed. */
@@ -204,7 +222,8 @@ public final class TrainingSession {
 
     private static final class Slot {
         final long wordId;
-        int hintLetters;
+        /** 0 = no hint yet, 1 = length shown, n = length and n - 1 letters shown. */
+        int hintSteps;
         boolean answered;
 
         Slot(long wordId) {

@@ -21,8 +21,8 @@ supports adding more language pairs without changing the business logic.
 | 7 | Training progress is stored on the server; the child can stop and resume. One attempt = one round. |
 | 8 | If the first pass is not finished by the end of the week (Sun 23:59), words **not yet spelled correctly** (wrong or unanswered) get 0 points and the "unlearned" status. Words already spelled correctly keep their points. |
 | 9 | A word may have several accepted answers (synonyms, colour/color). |
-| 10 | Using a hint (any number of presses) lowers the word's score by one level, minimum 0.5. Letters are revealed left to right, at most `length − 1`. |
-| 11 | Revealed letters reset in the next round; the "hint used" flag sticks to the word. |
+| 10 | Hints come in steps: the first shows only how many letters the word has (the length is not shown before), each further step reveals one more letter at a random position, at most `length − 1` letters. Any hint step (any number of presses) lowers the word's score by one level, minimum 0.5. |
+| 11 | Hint steps reset in the next round (the length is hidden again, letter positions are drawn anew); the "hint used" flag sticks to the word. |
 | 12 | Hard word = final score 0.5 (includes every "problematic" word). Unlearned = 0. |
 | 13 | One parent login; switch to a child profile; returning to parent mode requires a PIN. |
 | 14 | A word set is frozen when the week is launched. |
@@ -174,14 +174,14 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 |---|---|---|
 | GET | `/me/home` | (CHILD) child info, this week's set with points (final or so far), current month: closed weeks, points, reward |
 | POST | `/weeks/{weekId}/sessions` | start or resume: the first pass while the week is active and not passed, otherwise practice (`counts=false`) |
-| GET | `/sessions/{id}` | session state: `current` item `{wordId, round, position, prompt, answerLength, hintMask, hintAvailable, roundSize, remainingInRound}`, points so far, per-word states |
+| GET | `/sessions/{id}` | session state: `current` item `{wordId, round, position, prompt, hintMask, hintAvailable, roundSize, remainingInRound}` (`hintMask` is null until the first hint, so the length stays secret), points so far, per-word states |
 | POST | `/sessions/{id}/answers` | `{weekWordId, round, answer}` → `{verdict, correctAnswer, showCorrectAnswerFor, becameProblematic, roundFinished, sessionFinished, next, points}` |
 | POST | `/sessions/{id}/hint` | `{weekWordId, round}` → `{hintMask, hintAvailable}` |
 
 - Answers are idempotent on `(session, weekWord, round)`: a retried request returns the stored result, even after the session finished. Answering a word that is not current → `409 CONFLICT`; a finished or expired session → `409 SESSION_CLOSED`; a blank answer → `IGNORED`.
 - Sessions are stored as an append-only event log (`training_event`: answers and hints). The engine is deterministic for a stored seed, so replaying the events restores the exact state, including revealed hint letters. A unique `(session, seq)` stops two tabs from writing at once.
 - Finishing the first pass closes the week immediately (`COMPLETED`); after week 4 the month report is built at once.
-- The response never contains the answer of the current word, only its hint mask.
+- The response never contains the answer of the current word or its length, only its hint mask once a hint was taken.
 
 ---
 
@@ -273,10 +273,17 @@ finishRound(session):
 
 hint(session, weekWordId, roundNo):
     item = currentItem; check that it is this word
-    maxLetters = letterCount(word.primaryAnswer) - 1
-    item.hintLetters = min(item.hintLetters + 1, maxLetters)
-    sessionWord.hint = true                  // sticks until the end of the session (rule 11)
-    return mask(primaryAnswer, item.hintLetters)  // spaces and hyphens always visible: "i _ _   c _ _ _ _"
+    maxSteps = 1 + (letterCount(word.primaryAnswer) - 1)   // the length step + at most len − 1 letters
+    if item.hintSteps < maxSteps:
+        item.hintSteps += 1
+        sessionWord.hint = true              // sticks until the end of the session (rule 11)
+    return mask(item)
+
+mask(item):                                  // shown to the child; null before the first hint
+    if item.hintSteps == 0: return null      // the length is a hint too
+    order = shuffle(letter indices, rnd(seed ^ wordId ^ round))   // random, but replayable
+    return primaryAnswer with the first (hintSteps − 1) letters of `order` shown, the rest as "_";
+           spaces and hyphens always visible: "_ c _   _ _ _ a _"
 ```
 
 ### 3.4 Placing problematic words within a round
@@ -368,7 +375,7 @@ planCarryOver(month, weekLimit):               // when a week draft is created
 | Child never started training | All words get 0 and "unlearned" |
 | Re-training a completed week | `PRACTICE` session; points and `child_word` are not changed |
 | Training an expired week | Allowed as `PRACTICE` |
-| One-letter word (`I`, `a`) | No hint available (max = 0); the UI button is disabled |
+| One-letter word (`I`, `a`) | Only the length hint (one box); no letter is ever revealed (max = 0) |
 | Two-word answer (`ice cream`) | Spaces are visible in the mask; inner spaces are collapsed when checking |
 | Synonyms | Any form in `accepted_answers` is accepted; the hint uses the primary form |
 | One word left and it is problematic | A one-word round (constraint relaxed) |
@@ -388,8 +395,8 @@ Implemented in `com.kidsvocab.core` (`text`, `scoring`, `training`, `week`, `mon
 
 - `ScoringPolicyTest` — the whole table in 3.2, parameterised.
 - `AnswerNormalizerTest`, `WordCardTest` — case, whitespace, apostrophes, dashes, Unicode, synonyms.
-- `HintMaskTest` — mask, separators, `len − 1` limit.
-- `TrainingSessionTest` — everything right in round 1; mistakes → rounds; "problematic" exactly on the 3rd mistake; hints reset per round with a sticky flag; idempotency; empty answer; conflicts; closing.
+- `HintMaskTest` — mask in a given reveal order, separators, reproducible random order, `len − 1` limit.
+- `TrainingSessionTest` — everything right in round 1; mistakes → rounds; "problematic" exactly on the 3rd mistake; length step then random letters, reproducible per seed; hints reset per round with a sticky flag; idempotency; empty answer; conflicts; closing.
 - `RoundArrangerTest` — "not at the edges and not adjacent" property (property-based, jqwik) + every relaxation branch.
 - `WeekSummarizerTest` — rule 8: solved words keep points, unsolved and unanswered get 0; session never started. Completed and expired weeks share one rule.
 - `WeekCalendarTest` — Mon–Sun boundaries, deadline in the parent's zone, DST.
