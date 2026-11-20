@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kidsvocab.web.auth.RefreshCookie;
 import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,9 +33,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * (and the Spring context is cached), so every test creates its own accounts with unique e-mails.
  */
 @Tag("integration")
-@SpringBootTest
+@SpringBootTest(properties = "app.scheduling.enabled=false")
 @AutoConfigureMockMvc
+@Import(IntegrationTest.TestClockConfig.class)
 public abstract class IntegrationTest {
+
+    @TestConfiguration
+    static class TestClockConfig {
+
+        @Bean
+        @Primary
+        MutableClock testClock() {
+            return new MutableClock();
+        }
+    }
 
     protected static final String PASSWORD = "correct-horse";
     protected static final String PIN = "2468";
@@ -48,6 +64,13 @@ public abstract class IntegrationTest {
     protected ObjectMapper json;
     @Autowired
     protected JdbcTemplate jdbc;
+    @Autowired
+    protected MutableClock clock;
+
+    @AfterEach
+    void resetClock() {
+        clock.reset();
+    }
 
     /** Access token plus the refresh token from the cookie. */
     protected record Session(String accessToken, String refreshToken) {

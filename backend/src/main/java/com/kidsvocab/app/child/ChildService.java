@@ -6,6 +6,8 @@ import com.kidsvocab.domain.child.Child;
 import com.kidsvocab.domain.child.ChildRepository;
 import com.kidsvocab.domain.child.Level;
 import com.kidsvocab.domain.language.LanguageRepository;
+import com.kidsvocab.domain.study.StudyWeekRepository;
+import com.kidsvocab.domain.study.WeekStatus;
 import com.kidsvocab.security.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +20,19 @@ import java.util.List;
 public class ChildService {
 
     public static final int DEFAULT_WEEK_SIZE = 10;
+    private static final List<WeekStatus> OPEN_WEEKS =
+            List.of(WeekStatus.DRAFT, WeekStatus.SCHEDULED, WeekStatus.ACTIVE);
 
     private final ChildRepository children;
     private final LanguageRepository languages;
+    private final StudyWeekRepository weeks;
     private final Clock clock;
 
-    public ChildService(ChildRepository children, LanguageRepository languages, Clock clock) {
+    public ChildService(ChildRepository children, LanguageRepository languages, StudyWeekRepository weeks,
+                        Clock clock) {
         this.children = children;
         this.languages = languages;
+        this.weeks = weeks;
         this.clock = clock;
     }
 
@@ -60,6 +67,11 @@ public class ChildService {
     public Child update(CurrentUser user, long childId, ChildData data) {
         requireParent(user);
         Child child = find(user.parentId(), childId);
+        boolean languagesChange = !data.nativeLang().equals(child.getNativeLang())
+                || !data.targetLang().equals(child.getTargetLang());
+        if (languagesChange && weeks.existsByChildIdAndStatusIn(child.getId(), OPEN_WEEKS)) {
+            throw new AppException(Code.CONFLICT, "Languages cannot change while a week is prepared or running");
+        }
         apply(child, data);
         return child;
     }

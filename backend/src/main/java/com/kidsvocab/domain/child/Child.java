@@ -48,6 +48,9 @@ public class Child {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "last_auto_draft")
+    private LocalDate lastAutoDraft;
+
     protected Child() {
     }
 
@@ -68,6 +71,14 @@ public class Child {
 
     public void archive() {
         archived = true;
+    }
+
+    public void markAutoDraft(LocalDate monday) {
+        this.lastAutoDraft = monday;
+    }
+
+    public LocalDate getLastAutoDraft() {
+        return lastAutoDraft;
     }
 
     public Long getId() {

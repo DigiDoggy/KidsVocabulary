@@ -96,6 +96,7 @@ The authoritative schema lives in the Flyway migrations under `backend/src/main/
 
 - `V1__language.sql` — language reference table (`ru`, `et`, `en`).
 - `V2__schema.sql` — accounts, children, refresh tokens, dictionary (`concept`, `word_form`), months, weeks, week words, training sessions, rounds, attempts, word history, carry-over queue, AI request log.
+- `V4__week_planning.sql` — week month/index assigned on activation, one prepared week per child, carry-over placement tracking, automatic draft marker.
 - `V3__seed_dictionary.sql` — a starter dictionary of ~275 concepts with primary forms in en/ru/et and accepted English variants (mum/mom, grey/gray), grouped by topic (animals, food, family, school, colours, numbers, home, clothes, body, nature, transport, toys, actions, describing words). Prompts are unambiguous within each native language; words spelled the same in the native language and English are excluded. These rules are checked by `SeedDictionaryIntegrationTest`.
 
 Notable details:
@@ -136,22 +137,34 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 |---|---|---|
 | GET/POST | `/children` | list / create a child |
 | GET/PUT/DELETE | `/children/{id}` | profile (DELETE = archive) |
-| GET | `/children/{id}/weeks?from&to` | weeks (calendar) |
-| POST | `/children/{id}/weeks` | `{startDate, wordCount}` → draft; carried-over words are added immediately |
-| GET | `/weeks/{weekId}` | set + status |
-| PUT | `/weeks/{weekId}` | change `wordCount`/date (DRAFT only) |
-| POST | `/weeks/{weekId}/words` | add manually `{source, target, extraAnswers[], topic?}` |
-| DELETE | `/weeks/{weekId}/words/{wordId}` | remove a word |
+| GET | `/children/{id}/weeks` | weeks, newest first |
+| POST | `/children/{id}/weeks` | `{startDate?, wordCount?}` → draft for this or next Monday (default: this week if it has no set); carried-over words are added immediately |
+| GET | `/weeks/{weekId}` | set + status + per-word results once closed |
+| PUT | `/weeks/{weekId}` | `{startDate?, wordCount}` (DRAFT only; word count not below the words already in the set) |
+| DELETE | `/weeks/{weekId}` | delete a draft |
+| POST | `/weeks/{weekId}/words` | add manually `{source, target, extraAnswers[]}`; reuses a dictionary concept when the pair is known |
+| DELETE | `/weeks/{weekId}/words/{wordId}` | remove a word (not a carried-over one) |
 | POST | `/weeks/{weekId}/words/{wordId}/replace` | `{topic?}` → replace with another suggestion |
-| PUT | `/weeks/{weekId}/words/{wordId}` | edit text / extra answers |
-| POST | `/weeks/{weekId}/suggest` | `{topic?}` fill up to `wordCount` (AI → dictionary fallback); response includes `provider`: `AI`/`DICTIONARY` |
-| POST | `/weeks/{weekId}/launch` | `{when: NOW|NEXT_MONDAY}` → `ACTIVE`/`SCHEDULED`; checks: word count = wordCount, no overlapping weeks |
+| POST | `/weeks/{weekId}/suggest` | `{topic?}` fill up to `wordCount` (AI → dictionary fallback) |
+| POST | `/weeks/{weekId}/launch` | full set required; a week for this Monday → `ACTIVE`, for next Monday → `SCHEDULED` |
+| POST | `/weeks/{weekId}/unschedule` | `SCHEDULED` → `DRAFT` |
 | GET | `/children/{id}/months` | list of months |
 | GET | `/months/{monthId}` | month progress (current points, weeks) |
 | PUT | `/months/{monthId}/reward` | `{text}` reward |
 | GET | `/months/{monthId}/report` | final report (after closing) |
 | GET | `/weeks/{weekId}/stats` | per word: attempts, hints, problematic |
-| GET | `/dictionary/topics?lang=` | topics for suggestions |
+| GET | `/dictionary/topics` | topics for suggestions |
+
+**Week planning rules** (implemented in `WeekService` / `WeekLifecycleService`):
+
+- A child has at most one prepared week (`DRAFT` or `SCHEDULED`); it may start this Monday or next Monday.
+- A week joins a month and gets its index only when it becomes `ACTIVE`, so a set prepared during week 4 becomes week 1 of the next month.
+- Carried-over words are placed when the draft is created (quota from `CarryOverPlanner`) and cannot be removed. If a month closes after next week's draft was prepared, its carry-overs go into the remaining weeks of the new month.
+- Suggestions never repeat the child's word history, words of open weeks, words queued for carry-over or words of the current month; prompts and primary answers stay unique within a set. Level A0 gets difficulty ≤ 2.
+- The set is frozen on launch; manual words of a draft are copied with their accepted answers.
+- Lifecycle runs on every week request for that child and every 15 minutes (`app.scheduling.*`): expire overdue weeks, activate scheduled ones, close the month after week 4 (report snapshot + carry-over queue). Until training sessions are stored, an expired week counts every word as not started.
+- Automatic draft: once per calendar week, only for children who have studied before, only if nothing is prepared or running this week (`child.last_auto_draft` prevents re-creating a deleted draft).
+- A child's languages cannot change while a week is prepared or running.
 
 ### 2.3 Child (mode = CHILD, or PARENT for viewing)
 

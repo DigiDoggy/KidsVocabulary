@@ -35,6 +35,10 @@ management:
 app:
   training:
     show-correct-answer-seconds: 5
+  scheduling:
+    enabled: true
+    # how often weeks are expired/activated and automatic drafts are prepared
+    week-lifecycle-interval: PT15M
   ai:
     provider: ${AI_PROVIDER:none}
     api-key: ${AI_API_KEY:}
