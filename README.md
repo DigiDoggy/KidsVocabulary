@@ -2,12 +2,31 @@
 
 A web application that helps children learn foreign-language words, with a focus on spelling.
 
+> **About this project.** KidsVocabulary is a personal project, made for my own family's use. It was built
+> entirely with the help of AI: requirements, design, code, tests and documentation were written in
+> conversation with an AI coding assistant, with me deciding what to build and checking the result.
+
 A parent prepares a weekly word set (by hand, with AI suggestions, or both) and hands the tablet to the
 child. The child spells each word until every word is right; points add up over a four-week "month" that
-ends with a report and the reward agreed in advance. The first target language is English; the child's
-native language can be Russian or Estonian.
+ends with a report and the reward agreed in advance. The child learns English or German; the
+native language can be Russian or Estonian. German has no built-in starter dictionary: its words come from
+the parent and from the AI provider, so automatic filling for German needs `AI_PROVIDER` to be set.
 
 Architecture, domain rules and the API are described in [docs/DESIGN.md](docs/DESIGN.md).
+
+## Demo: Estonian → English
+
+**The parent builds a week.** A new set for this week: one word typed by hand (*päike → sun*), the rest
+filled up automatically on the topic "Animals", then the week is started.
+
+![The parent prepares a weekly word set](docs/media/parent-week-builder.gif)
+
+**The child trains.** The child mode speaks the child's native language (Estonian here). Each word is
+spelled in English; a hint first shows the number of letters, then reveals letters one by one. After a
+mistake the right spelling stays on screen for a few seconds, and the word comes back in the next round.
+At the end the child sees the points for the week.
+
+![The child trains the week's words](docs/media/child-training.gif)
 
 ## Run with Docker
 

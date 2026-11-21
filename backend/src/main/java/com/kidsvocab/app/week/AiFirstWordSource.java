@@ -138,7 +138,12 @@ public class AiFirstWordSource implements WordSuggestionSource {
         }
     }
 
-    /** Returns the concept for a validated word, creating a shared AI concept if the pair is new. */
+    /**
+     * Returns the concept for a validated word: a known pair is reused; a native word that already names a
+     * shared concept without a word in the target language completes that concept (this is how a target
+     * language without seed words, such as German, builds its dictionary); otherwise a new shared AI concept
+     * is created, unless the native word already means something else.
+     */
     private Optional<Long> store(ValidatedWord word, Request request, Set<Long> excludeConcepts) {
         Optional<Long> known = dictionary.findPair(request.nativeLang(), word.sourceNormalized(),
                 request.targetLang(), word.targetNormalized(), request.parentId());
@@ -146,7 +151,14 @@ public class AiFirstWordSource implements WordSuggestionSource {
             return known.filter(id -> !excludeConcepts.contains(id));
         }
         if (dictionary.sharedPrimaryExists(request.nativeLang(), word.sourceNormalized())) {
-            return Optional.empty();   // the native word already means something else in the dictionary
+            Optional<Long> incomplete = dictionary.sharedConceptWithoutLanguage(
+                    request.nativeLang(), word.sourceNormalized(), request.targetLang(), word.englishNormalized());
+            incomplete.ifPresent(id -> {
+                forms.save(new WordForm(id, request.targetLang(), word.target(), word.targetNormalized(), true));
+                forms.flush();
+            });
+            // otherwise the native word already means something else in this language
+            return incomplete.filter(id -> !excludeConcepts.contains(id));
         }
         Concept concept = concepts.save(new Concept(word.topic(), Concept.difficultyOf(word.target()),
                 Concept.Origin.AI, null, clock.instant()));

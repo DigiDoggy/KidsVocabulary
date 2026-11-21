@@ -75,6 +75,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
   const [busyWordId, setBusyWordId] = useState<number | null>(null);
   const [filling, setFilling] = useState(false);
   const full = week.missing <= 0;
+  const topicOk = TOPIC_PATTERN.test(topic);
   const outdated = week.startDate < thisMonday;
 
   async function mutate(action: () => Promise<Week>) {
@@ -84,7 +85,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
 
   async function onReplace(word: WordView) {
     setBusyWordId(word.id);
-    await mutate(() => replaceWord(week.id, word.id, topic));
+    await mutate(() => replaceWord(week.id, word.id, topic.trim()));
     setBusyWordId(null);
   }
 
@@ -96,7 +97,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
 
   async function onFill() {
     setFilling(true);
-    await mutate(() => fillUp(week.id, topic));
+    await mutate(() => fillUp(week.id, topic.trim()));
     setFilling(false);
   }
 
@@ -144,7 +145,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
                   <button
                     type="button"
                     className="btn btn--small btn--ghost"
-                    disabled={busy}
+                    disabled={busy || !topicOk}
                     aria-label={t('week.replaceWord', { word: w.prompt })}
                     onClick={() => onReplace(w)}
                   >
@@ -171,7 +172,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
         <Card title={t('week.fillTitle')}>
           <p className="muted">{t('week.fillHint')}</p>
           <TopicSelect value={topic} onChange={setTopic} />
-          <button type="button" className="btn btn--primary" disabled={busy || full} onClick={onFill}>
+          <button type="button" className="btn btn--primary" disabled={busy || full || !topicOk} onClick={onFill}>
             {filling ? t('week.filling') : full ? t('week.setFull') : t('week.fill', { count: week.missing })}
           </button>
         </Card>
@@ -207,16 +208,19 @@ function WeekSettings({
 }) {
   const { t, formatDate } = useI18n();
   const [startDate, setStartDate] = useState(week.startDate);
-  const [wordCount, setWordCount] = useState(week.wordCount);
+  // Kept as text so the field can be cleared while typing; a number input bound to a number cannot.
+  const [countText, setCountText] = useState(String(week.wordCount));
   const [run, busy, error] = useAction();
 
   useEffect(() => {
     setStartDate(week.startDate);
-    setWordCount(week.wordCount);
+    setCountText(String(week.wordCount));
   }, [week.startDate, week.wordCount]);
 
+  const wordCount = /^\d+$/.test(countText.trim()) ? Number(countText.trim()) : NaN;
+  const validCount = wordCount >= 1 && wordCount <= 50;
   const dirty = startDate !== week.startDate || wordCount !== week.wordCount;
-  const tooSmall = wordCount < week.words.length;
+  const tooSmall = validCount && wordCount < week.words.length;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -250,11 +254,11 @@ function WeekSettings({
             type="number"
             min={1}
             max={50}
-            value={wordCount}
-            onChange={(e) => setWordCount(Number(e.target.value))}
+            value={countText}
+            onChange={(e) => setCountText(e.target.value)}
           />
         </Field>
-        <button className="btn btn--primary" disabled={busy || !dirty || tooSmall || wordCount < 1 || wordCount > 50}>
+        <button className="btn btn--primary" disabled={busy || !dirty || tooSmall || !validCount}>
           {t('common.save')}
         </button>
       </form>
@@ -323,20 +327,44 @@ function AddWordCard({
   );
 }
 
+const CUSTOM_TOPIC = '__custom__';
+const TOPIC_PATTERN = /^[\p{L} '-]*$/u;
+
+/** A dictionary topic or the parent's own one; an own topic is passed to the AI provider as typed. */
 function TopicSelect({ value, onChange }: { value: string; onChange: (topic: string) => void }) {
   const { t, has } = useI18n();
   const topics = useLoad(listTopics, []);
+  const [custom, setCustom] = useState(false);
   return (
-    <Field label={t('week.topic')}>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">{t('week.anyTopic')}</option>
-        {topics.data?.map((topic) => (
-          <option key={topic} value={topic}>
-            {has(`topics.${topic}`) ? t(`topics.${topic}`) : topic}
-          </option>
-        ))}
-      </select>
-    </Field>
+    <>
+      <Field label={t('week.topic')}>
+        <select
+          value={custom ? CUSTOM_TOPIC : value}
+          onChange={(e) => {
+            const own = e.target.value === CUSTOM_TOPIC;
+            setCustom(own);
+            onChange(own ? '' : e.target.value);
+          }}
+        >
+          <option value="">{t('week.anyTopic')}</option>
+          {topics.data?.map((topic) => (
+            <option key={topic} value={topic}>
+              {has(`topics.${topic}`) ? t(`topics.${topic}`) : topic}
+            </option>
+          ))}
+          <option value={CUSTOM_TOPIC}>{t('week.customTopic')}</option>
+        </select>
+      </Field>
+      {custom && (
+        <Field
+          label={t('week.customTopicLabel')}
+          hint={t('week.customTopicHint')}
+          error={TOPIC_PATTERN.test(value) ? undefined : t('week.customTopicInvalid')}
+        >
+          <input maxLength={40} value={value} onChange={(e) => onChange(e.target.value)} />
+        </Field>
+      )}
+    </>
   );
 }
 

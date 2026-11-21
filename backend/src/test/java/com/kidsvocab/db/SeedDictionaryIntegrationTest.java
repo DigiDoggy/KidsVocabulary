@@ -33,9 +33,10 @@ class SeedDictionaryIntegrationTest extends IntegrationTest {
     void promptsAreUnambiguousInEachNativeLanguage() {
         for (String lang : List.of("ru", "et")) {
             List<String> duplicates = jdbc.queryForList("""
-                    select normalized from word_form
-                    where lang = ? and is_primary
-                    group by normalized having count(*) > 1
+                    select f.normalized from word_form f
+                    join concept c on c.id = f.concept_id and c.origin = 'SEED'
+                    where f.lang = ? and f.is_primary
+                    group by f.normalized having count(*) > 1
                     """, String.class, lang);
 
             assertThat(duplicates).as("duplicate %s prompts", lang).isEmpty();

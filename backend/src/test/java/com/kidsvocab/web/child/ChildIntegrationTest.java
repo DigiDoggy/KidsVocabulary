@@ -89,10 +89,10 @@ class ChildIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION"));
 
         Map<String, Object> unknownLanguage = new HashMap<>(childRequest("Mia"));
-        unknownLanguage.put("nativeLang", "de");
+        unknownLanguage.put("nativeLang", "fr");
         send(post("/api/v1/children"), parent, unknownLanguage)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Unsupported language: de"));
+                .andExpect(jsonPath("$.detail").value("Unsupported language: fr"));
     }
 
     private ResultActions send(MockHttpServletRequestBuilder request, Session session, Object body) throws Exception {

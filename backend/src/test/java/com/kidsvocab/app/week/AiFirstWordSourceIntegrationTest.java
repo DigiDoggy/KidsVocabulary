@@ -72,6 +72,29 @@ class AiFirstWordSourceIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void germanWordsCompleteMatchingDictionaryConcepts() throws Exception {
+        childId = createChild("de");
+        when(provider.suggest(any())).thenReturn(List.of(
+                new SuggestedWord("koer", "Hund", "animals", "dog"),        // seed "koer = dog" gets its German word
+                new SuggestedWord("tee", "Weg", "transport", "road"),       // "tee" is tea in the dictionary: dropped
+                new SuggestedWord("kass", "Katze", "animals", null),        // meaning not confirmed: dropped
+                new SuggestedWord("kaelkirjak", "Giraffe", "animals", "giraffe")));
+
+        JsonNode week = fill(2);
+
+        assertThat(texts(week, "answer")).containsExactly("Hund", "Giraffe");
+        long seedDog = jdbc.queryForObject("select f.concept_id from word_form f join concept c on c.id = f.concept_id "
+                + "where c.origin = 'SEED' and f.lang = 'en' and f.normalized = 'dog'", Long.class);
+        assertThat(week.get("words").get(0).get("conceptId").asLong()).isEqualTo(seedDog);
+        assertThat(jdbc.queryForObject("select text from word_form where concept_id = ? and lang = 'de'",
+                String.class, seedDog)).isEqualTo("Hund");
+        long seedTea = jdbc.queryForObject("select f.concept_id from word_form f join concept c on c.id = f.concept_id "
+                + "where c.origin = 'SEED' and f.lang = 'en' and f.normalized = 'tea'", Long.class);
+        assertThat(jdbc.queryForObject("select count(*) from word_form where concept_id = ? and lang = 'de'",
+                Integer.class, seedTea)).isZero();
+    }
+
+    @Test
     void requestCarriesOnlyNonPersonalDataAndExclusions() throws Exception {
         when(provider.suggest(any())).thenReturn(List.of());
         long weekId = createDraft(4);
@@ -136,10 +159,14 @@ class AiFirstWordSourceIntegrationTest extends IntegrationTest {
     // --- helpers ---------------------------------------------------------------------------------
 
     private long createChild() throws Exception {
+        return createChild("en");
+    }
+
+    private long createChild(String targetLang) throws Exception {
         String body = mvc.perform(withAuth(post("/api/v1/children"), parent)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("name", "Mia", "level", "A1", "nativeLang", "et",
-                                "targetLang", "en", "birthDate", LocalDate.now().minusYears(8).minusDays(10).toString()))))
+                                "targetLang", targetLang, "birthDate", LocalDate.now().minusYears(8).minusDays(10).toString()))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return json.readTree(body).get("id").asLong();

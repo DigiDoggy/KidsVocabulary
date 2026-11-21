@@ -10,7 +10,7 @@ final class SuggestionPrompt {
     static final int MAX_EXCLUDED = 300;
 
     private static final Map<String, String> LANGUAGE_NAMES = Map.of(
-            "en", "English", "ru", "Russian", "et", "Estonian");
+            "de", "German", "en", "English", "ru", "Russian", "et", "Estonian");
 
     private SuggestionPrompt() {
     }
@@ -19,11 +19,15 @@ final class SuggestionPrompt {
         return """
                 You suggest vocabulary for children who learn to spell words in a foreign language.
                 Reply with JSON only, exactly in this shape:
-                {"words": [{"source": "...", "target": "...", "topic": "..."}]}
+                {"words": [{"source": "...", "target": "...", "topic": "...", "english": "..."}]}
                 Rules:
-                - "source" is the word in the child's native language, "target" is its translation.
+                - "source" is the word in the child's native language, "target" is its translation,
+                  "english" is the English word for the same meaning (equal to "target" for English).
                 - Common, concrete, child-friendly everyday words; nouns in the singular, verbs in the infinitive.
-                - One word or a two-word phrase, lower case, no articles, no punctuation.
+                - One word or a two-word phrase, no articles, no punctuation.
+                - Lower case, except where the language's normal spelling needs a capital letter
+                  (German nouns start with one: "Hund", "Apfel").
+                - Use the standard spelling with all its letters (ä, ö, ü, ß, õ, š ...), never substitutes.
                 - Each source word has one clear translation, and every target word appears only once.
                 - Nothing about violence, weapons, alcohol, drugs, adult topics, brands or people's names.
                 """;

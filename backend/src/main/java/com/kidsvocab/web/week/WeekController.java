@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
 import java.util.List;
 
 /** Weekly word sets, managed by the parent. */
@@ -100,6 +101,7 @@ public class WeekController {
     }
 
     private static String topic(TopicRequest request) {
-        return request == null || request.topic() == null || request.topic().isBlank() ? null : request.topic();
+        return request == null || request.topic() == null || request.topic().isBlank()
+                ? null : request.topic().strip().replaceAll(" +", " ").toLowerCase(Locale.ROOT);
     }
 }

@@ -15,8 +15,8 @@ class InfoControllerIntegrationTest extends IntegrationTest {
         mvc.perform(get("/api/v1/info"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("KidsVocabulary"))
-                .andExpect(jsonPath("$.languages.length()").value(3))
-                .andExpect(jsonPath("$.languages[0].code").value("en"));
+                .andExpect(jsonPath("$.languages.length()").value(4))
+                .andExpect(jsonPath("$.languages[0].code").value("de"));
     }
 
     @Test

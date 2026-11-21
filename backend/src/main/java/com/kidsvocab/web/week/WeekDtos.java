@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -32,7 +33,11 @@ public final class WeekDtos {
             @Size(max = 5) List<@Size(max = 60) String> extraAnswers) {
     }
 
-    public record TopicRequest(@Size(max = 40) String topic) {
+    /**
+     * A dictionary topic or the parent's own one, which goes into the AI prompt as typed:
+     * letters, spaces, hyphens and apostrophes only.
+     */
+    public record TopicRequest(@Size(max = 40) @Pattern(regexp = "[\\p{L} '-]*") String topic) {
     }
 
     /** Summary row for week lists. */

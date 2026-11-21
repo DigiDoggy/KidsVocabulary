@@ -10,20 +10,7 @@
 secrets/
 credentials*.json
 
-# --- Local-only notes and AI assistant configuration ---
-CLAUDE.md
-CLAUDE.local.md
-**/CLAUDE.md
-.claude/
-.mcp.json
-AGENTS.md
-GEMINI.md
-.cursor/
-.cursorrules
-.aider*
-.continue/
-.codex/
-.github/copilot-instructions.md
+# --- Local-only notes ---
 *.local.md
 notes/
 scratch/

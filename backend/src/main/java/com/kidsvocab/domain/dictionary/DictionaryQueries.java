@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -126,6 +127,34 @@ public class DictionaryQueries {
                 where c.owner_parent_id is null and f.lang = :lang and f.is_primary and f.normalized = :n
                 """, new MapSqlParameterSource().addValue("lang", lang).addValue("n", normalized), Integer.class);
         return count != null && count > 0;
+    }
+
+    /**
+     * The shared concept that uses this native word as its primary form, if it is the only one, has no word
+     * in {@code targetLang} yet and has {@code english} among its English forms (e.g. the seed concept
+     * "koer = dog" for a German learner). The English check keeps a homonym ("tee" = tea / road) from
+     * attaching the wrong translation.
+     */
+    public Optional<Long> sharedConceptWithoutLanguage(String nativeLang, String nativeNormalized, String targetLang,
+                                                       String english) {
+        if (english == null) {
+            return Optional.empty();
+        }
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+                select c.id,
+                       exists(select 1 from word_form t where t.concept_id = c.id and t.lang = :target) as has_target,
+                       exists(select 1 from word_form e where e.concept_id = c.id and e.lang = 'en'
+                              and e.normalized = :english) as same_meaning
+                from word_form f join concept c on c.id = f.concept_id
+                where c.owner_parent_id is null and f.lang = :lang and f.is_primary and f.normalized = :n
+                """, new MapSqlParameterSource().addValue("lang", nativeLang).addValue("n", nativeNormalized)
+                .addValue("target", targetLang).addValue("english", english));
+        if (rows.size() != 1) {
+            return Optional.empty();
+        }
+        Map<String, Object> row = rows.getFirst();
+        boolean fits = Boolean.FALSE.equals(row.get("has_target")) && Boolean.TRUE.equals(row.get("same_meaning"));
+        return fits ? Optional.of(((Number) row.get("id")).longValue()) : Optional.empty();
     }
 
     /** Primary target-language words of the given concepts. */

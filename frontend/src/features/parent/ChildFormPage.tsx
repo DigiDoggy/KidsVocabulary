@@ -10,7 +10,7 @@ import { useLoad } from '../../lib/useLoad';
 
 const LEVELS: Level[] = ['A0', 'A1', 'A2'];
 const NATIVE_LANGS = ['ru', 'et'];
-const TARGET_LANGS = ['en'];
+const TARGET_LANGS = ['en', 'de'];
 const DEFAULT_WEEK_SIZE = 10;
 
 export function ChildFormPage() {
@@ -45,6 +45,8 @@ function ChildForm({ initial }: { initial: Child | null }) {
       defaultWeekSize: DEFAULT_WEEK_SIZE,
     },
   );
+  // Kept as text so the field can be cleared while typing; a number input bound to a number cannot.
+  const [weekSizeText, setWeekSizeText] = useState(String(data.defaultWeekSize));
   const [run, busy, error] = useAction();
   const [archive, archiving, archiveError] = useAction();
   const fieldErrors = error instanceof ApiError ? error.fieldErrors : {};
@@ -121,8 +123,11 @@ function ChildForm({ initial }: { initial: Child | null }) {
           min={1}
           max={50}
           required
-          value={data.defaultWeekSize}
-          onChange={(e) => set('defaultWeekSize', Number(e.target.value))}
+          value={weekSizeText}
+          onChange={(e) => {
+            setWeekSizeText(e.target.value);
+            set('defaultWeekSize', Number(e.target.value));
+          }}
         />
       </Field>
       {Object.keys(fieldErrors).length === 0 && <ErrorMessage error={error} />}

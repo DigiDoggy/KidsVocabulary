@@ -1,4 +1,4 @@
-# Target-language (English) words that must never be suggested to a child, one per line.
+# Target-language words (English, German) that must never be suggested to a child, one per line.
 # Matched against each word of a suggestion after normalisation.
 alcohol
 beer
@@ -29,3 +29,26 @@ war
 weapon
 whisky
 wine
+
+# German
+alkohol
+bier
+blut
+bombe
+droge
+drogen
+gewehr
+kasino
+krieg
+leiche
+mord
+pistole
+schnaps
+tod
+tot
+töten
+umbringen
+waffe
+waffen
+wein
+zigarette

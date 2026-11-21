@@ -114,6 +114,11 @@ describe('App', () => {
     await userEvent.type(await screen.findByLabelText('Name'), 'Mari');
     await userEvent.click(screen.getByLabelText(/A1/));
     await userEvent.selectOptions(screen.getByLabelText('Native language'), 'et');
+    expect(screen.getByRole('option', { name: 'German' })).toBeInTheDocument();
+    const size = screen.getByLabelText(/Words per week/);
+    await userEvent.clear(size);
+    expect(size).toHaveValue(null);
+    await userEvent.type(size, '8');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByRole('heading', { name: 'Mari' })).toBeInTheDocument();
@@ -123,7 +128,7 @@ describe('App', () => {
       level: 'A1',
       nativeLang: 'et',
       targetLang: 'en',
-      defaultWeekSize: 10,
+      defaultWeekSize: 8,
     });
   });
 
@@ -197,6 +202,45 @@ describe('App', () => {
 
       await waitFor(() => expect(api.called('POST', '/weeks/5/suggest')).toHaveLength(1));
       expect(api.called('POST', '/weeks/5/suggest')[0].body).toEqual({ topic: 'animals' });
+    });
+
+    it('fills up on the parent\'s own topic', async () => {
+      const api = mockApi({ ...signedInParent, 'GET /weeks/5': draft(), 'POST /weeks/5/suggest': draft({ missing: 0 }) });
+      renderAt('/weeks/5');
+
+      await screen.findByText('koer');
+      await userEvent.selectOptions(await screen.findByLabelText('Topic'), 'Own topic…');
+      const own = screen.getByLabelText('Your topic');
+      await userEvent.type(own, 'space!');
+      expect(screen.getByText('Use letters, spaces and hyphens only.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add 1 word' })).toBeDisabled();
+
+      await userEvent.clear(own);
+      await userEvent.type(own, ' winter sports ');
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 word' }));
+
+      await waitFor(() => expect(api.called('POST', '/weeks/5/suggest')).toHaveLength(1));
+      expect(api.called('POST', '/weeks/5/suggest')[0].body).toEqual({ topic: 'winter sports' });
+    });
+
+    it('lets the parent clear the number of words before typing a new one', async () => {
+      const api = mockApi({
+        ...signedInParent,
+        'GET /weeks/5': draft(),
+        'PUT /weeks/5': draft({ wordCount: 12, missing: 10 }),
+      });
+      renderAt('/weeks/5');
+
+      const count = await screen.findByLabelText('Number of words');
+      await userEvent.clear(count);
+      expect(count).toHaveValue(null);
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+      await userEvent.type(count, '12');
+      expect(count).toHaveValue(12);
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(api.called('PUT', '/weeks/5')).toHaveLength(1));
+      expect(api.called('PUT', '/weeks/5')[0].body).toEqual({ wordCount: 12 });
     });
 
     it('shows the server error when replacing is impossible', async () => {

@@ -37,12 +37,14 @@
     "short": {
       "ru": "RU",
       "et": "ET",
-      "en": "EN"
+      "en": "EN",
+      "de": "DE"
     },
     "name": {
       "ru": "vene",
       "et": "eesti",
-      "en": "inglise"
+      "en": "inglise",
+      "de": "saksa"
     }
   },
   "nav": {
@@ -190,6 +192,10 @@
     "fillHint": "Valik arvestab lapse vanust, taset ja varasemaid sõnu.",
     "topic": "Teema",
     "anyTopic": "Mis tahes teema",
+    "customTopic": "Oma teema…",
+    "customTopicLabel": "Sinu teema",
+    "customTopicHint": "Näiteks: kosmos, köök, talispordialad. Oma teema sõnu pakub ainult tehisintellekt.",
+    "customTopicInvalid": "Ainult tähed, tühikud ja sidekriipsud.",
     "fill_one": "Lisa {count} sõna",
     "fill_other": "Lisa {count} sõna",
     "filling": "Valin sõnu…",

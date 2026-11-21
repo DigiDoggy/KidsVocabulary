@@ -5,8 +5,16 @@ A parent prepares a weekly word set (manually, with AI suggestions, or both); th
 until every word is spelled correctly; points accumulate over a 4-week cycle that ends with a report
 and an agreed reward.
 
-The first target language is English; native languages are Russian and Estonian. The data model
+Target languages are English and German; native languages are Russian and Estonian. The data model
 supports adding more language pairs without changing the business logic.
+
+**Adding a target language** (done for German): a migration with a row in `language`, the language's
+alphabet in `SuggestionValidator`, its English name in `SuggestionPrompt`, stop words in
+`ai/stop-words.txt`, and the option plus its name in the frontend (`TARGET_LANGS`, i18n catalogs). A seed
+dictionary is optional: German has none, so its words come from the parent's entries and from validated
+AI suggestions, which are stored and reused; without an AI provider, "Fill up" finds no German words.
+Answers are checked case-insensitively, but the stored spelling keeps its capitals (German nouns), and
+letters such as ä, ö, ü, ß must be typed as such.
 
 ## 0. Product rules
 
@@ -98,6 +106,7 @@ The authoritative schema lives in the Flyway migrations under `backend/src/main/
 - `V2__schema.sql` — accounts, children, refresh tokens, dictionary (`concept`, `word_form`), months, weeks, week words, training sessions, rounds, attempts, word history, carry-over queue, AI request log.
 - `V4__week_planning.sql` — week month/index assigned on activation, one prepared week per child, carry-over placement tracking, automatic draft marker.
 - `V5__training_events.sql` — training sessions as an event log (`training_event`), replacing the unused per-round snapshot tables.
+- `V6__german.sql` — German as a target language (no seed words).
 - `V3__seed_dictionary.sql` — a starter dictionary of ~275 concepts with primary forms in en/ru/et and accepted English variants (mum/mom, grey/gray), grouped by topic (animals, food, family, school, colours, numbers, home, clothes, body, nature, transport, toys, actions, describing words). Prompts are unambiguous within each native language; words spelled the same in the native language and English are excluded. These rules are checked by `SeedDictionaryIntegrationTest`.
 
 Notable details:
@@ -436,8 +445,10 @@ record SuggestionRequest(Integer childAge, Level level, String topic, List<Strin
 - Configuration: `AI_PROVIDER=none|gemini|openai-compatible`, `AI_API_KEY`, optional `AI_BASE_URL`, `AI_MODEL`. Defaults: `gemini-flash-lite-latest` (an alias that follows the current Flash-Lite model, since model names change often; it answers in 1–3 s, while the full Flash model took 30–60 s on the free tier) and `openai/gpt-oss-120b` on Groq. A provider without a key fails at startup; `none` uses the dictionary only.
 - Errors: HTTP 429 → `RATE_LIMITED`, network/timeout/other HTTP errors → `UNAVAILABLE`, unusable answer → `INVALID_RESPONSE`. 20 s timeout. After `UNAVAILABLE`/`RATE_LIMITED` the provider is skipped for 5 minutes (`app.ai.cooldown`); an invalid answer is retried once.
 - Flow: ask for the missing count plus a margin → validate (`core.suggestion.SuggestionValidator`) → store → ask once more if still short → fill the rest from `DictionaryWordSource`.
-- **Validation:** both parts present; only letters of the language's alphabet (ru — Cyrillic; et — Latin + õäöüšž; en — a–z) plus space/hyphen/apostrophe; ≤ 20 characters and ≤ 2 words; translation ≠ word; stop list (`ai/stop-words.txt`); no duplicates within the answer; nothing the child studied, has queued or has in the set. A topic outside the whitelist (dictionary topics) is dropped, not the word.
+- **Validation:** both parts present; only letters of the language's alphabet (ru — Cyrillic; et — Latin + õäöüšž; en — a–z; de — a–z + äöüß) plus space/hyphen/apostrophe; ≤ 20 characters and ≤ 2 words; translation ≠ word, and the translation is not the native word in other letters: both are reduced to a rough sound shape (Cyrillic spelled in Latin, accents dropped, c/k, z/s, w/v, y/i and similar merged, doubled letters collapsed) and must differ, which drops a German noun written in Cyrillic and also true look-alikes such as taxi — too easy to be worth a slot; stop list (`ai/stop-words.txt`); no duplicates within the answer; nothing the child studied, has queued or has in the set. A topic outside the whitelist (dictionary topics) is dropped, not the word.
+- **Own topic:** besides the dictionary topics the parent may type a topic of their own ("Own topic…" in the week builder, e.g. "space"). It is at most 40 characters of letters, spaces, hyphens and apostrophes (anything else is refused with 400, so no instructions can reach the prompt), stripped and lower-cased, and sent to the provider as the requested topic. The dictionary has no words for such a topic, so without an AI provider (or when it fails) the set stays short. Words found for it are stored without a topic, so the parent's text is never shown to other users.
 - **Storage:** a known pair reuses its concept; otherwise a shared `AI` concept is created — unless its native word is already the primary form of another shared concept (that would make prompts ambiguous).
+- **Completing concepts:** every suggestion also carries `english` (the English word for the meaning). If the native word already names a shared concept that has no word in the target language yet, and `english` is one of that concept's English forms, the suggested word is added to that concept instead of being dropped — this is how a target language without seed words (German) gets words for the existing concepts. A homonym with another meaning ("tee" = tea / road) does not match the English form and is dropped.
 - Only age (a number), level, languages, topic(s), count and an exclusion list of target words are sent — **no names or personal data**. Every call is logged in `ai_request_log` (status, counts, latency, error) without prompts.
 - Tests: providers against a mocked HTTP server (`MockRestServiceServer`: request shape, parsing, 429/500/timeout, invalid JSON); `AiFirstWordSource` end to end with a mocked provider (storage, reuse, ambiguity, top-up, cooldown, retry, request contents).
 

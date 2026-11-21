@@ -72,7 +72,8 @@ abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
         }
         List<SuggestedWord> words = new ArrayList<>();
         for (JsonNode item : items) {
-            words.add(new SuggestedWord(text(item, "source"), text(item, "target"), text(item, "topic")));
+            words.add(new SuggestedWord(text(item, "source"), text(item, "target"), text(item, "topic"),
+                    text(item, "english")));
         }
         return words;
     }
