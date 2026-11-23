@@ -82,7 +82,8 @@ public class TrainingService {
         StudyWeek week = viewableWeek(user, weekId);
         Child child = childOf(week);
         lifecycle.refresh(child);
-        week = weeks.findById(weekId).orElseThrow();
+        // concurrent starts (a double tap, two tabs) wait here, so only one of them creates the session
+        week = weeks.findByIdForUpdate(weekId).orElseThrow();
         if (week.getStatus().isPending()) {
             throw new AppException(Code.CONFLICT, "This week has not started yet");
         }

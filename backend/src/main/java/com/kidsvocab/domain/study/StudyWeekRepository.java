@@ -1,6 +1,9 @@
 package com.kidsvocab.domain.study;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -25,4 +28,9 @@ public interface StudyWeekRepository extends JpaRepository<StudyWeek, Long> {
     boolean existsByChildIdAndMonthIdIsNotNull(Long childId);
 
     Optional<StudyWeek> findFirstByChildIdAndStatusIn(Long childId, Collection<WeekStatus> statuses);
+
+    /** The week with its row locked until the transaction ends; serializes work that must happen once per week. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select w from StudyWeek w where w.id = :id")
+    Optional<StudyWeek> findByIdForUpdate(Long id);
 }

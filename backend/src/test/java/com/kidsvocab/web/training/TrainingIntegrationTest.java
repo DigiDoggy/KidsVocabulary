@@ -5,14 +5,23 @@ import com.kidsvocab.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -147,6 +156,36 @@ class TrainingIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void concurrentStartsShareOneSession() throws Exception {
+        long weekId = launchWeek(0, 3);
+        int callers = 4;
+        ExecutorService pool = Executors.newFixedThreadPool(callers);
+        CountDownLatch go = new CountDownLatch(1);
+        try {
+            List<Future<MockHttpServletResponse>> calls =
+                    new ArrayList<>();
+            for (int i = 0; i < callers; i++) {
+                calls.add(pool.submit(() -> {
+                    go.await();
+                    return as(child, post("/api/v1/weeks/" + weekId + "/sessions")).andReturn().getResponse();
+                }));
+            }
+            go.countDown();
+            Set<Long> ids = new HashSet<>();
+            for (var call : calls) {
+                var response = call.get(30, TimeUnit.SECONDS);
+                assertThat(response.getStatus()).isEqualTo(200);
+                ids.add(json.readTree(response.getContentAsString()).get("id").asLong());
+            }
+            assertThat(ids).hasSize(1);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(jdbc.queryForObject("select count(*) from training_session where week_id = ?", Long.class, weekId))
+                .isEqualTo(1L);
+    }
+
+    @Test
     void repeatedAndInvalidRequestsAreHandled() throws Exception {
         long weekId = launchWeek(0, 1);
         long sessionId = startSession(weekId);
@@ -214,7 +253,7 @@ class TrainingIntegrationTest extends IntegrationTest {
         JsonNode week = read(as(parent, get("/api/v1/weeks/" + weekId))
                 .andExpect(jsonPath("$.status").value("EXPIRED"))
                 .andExpect(jsonPath("$.points").value(2.0)));
-        List<String> outcomes = new java.util.ArrayList<>();
+        List<String> outcomes = new ArrayList<>();
         week.get("words").forEach(w -> outcomes.add(w.get("outcome").asText()));
         assertThat(outcomes).containsExactlyInAnyOrder("LEARNED", "UNLEARNED", "UNLEARNED");
 
@@ -282,7 +321,7 @@ class TrainingIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.result").value("REPEAT"))
                 .andExpect(jsonPath("$.reward").doesNotExist()));
         assertThat(report.get("hardWords").get(0).get("answer").asText()).isEqualTo("cat");
-        List<String> unlearned = new java.util.ArrayList<>();
+        List<String> unlearned = new ArrayList<>();
         report.get("unlearnedWords").forEach(w -> unlearned.add(w.get("prompt").asText()));
         assertThat(unlearned).containsExactlyInAnyOrder("lehm", "siga");
 
