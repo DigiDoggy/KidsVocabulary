@@ -189,7 +189,7 @@ function Trainer({ initial }: { initial: TrainingSession }) {
   return (
     <div className="kid__page train">
       <div className="train__status">
-        <span>{t('kid.roundLabel', { n: item.round })}</span>
+        <span className="train__round">{t('kid.roundLabel', { n: item.round })}</span>
         <span className="train__dots" role="img" aria-label={t('kid.wordOf', { n: item.position, total: item.roundSize })}>
           {Array.from({ length: item.roundSize }, (_, i) => (
             <span key={i} className={`train__dot${i < done ? ' is-done' : i === done ? ' is-current' : ''}`} />
@@ -250,9 +250,6 @@ function Trainer({ initial }: { initial: TrainingSession }) {
           </button>
         ) : (
           <div className="train__buttons">
-            <button className="btn btn--accent btn--huge" disabled={busy || feedback !== null || answer.trim() === ''}>
-              {t('kid.check')}
-            </button>
             <button
               type="button"
               className="btn btn--ghost btn--huge"
@@ -260,6 +257,9 @@ function Trainer({ initial }: { initial: TrainingSession }) {
               onClick={hint}
             >
               <span aria-hidden="true">💡</span> {t('kid.hint')}
+            </button>
+            <button className="btn btn--accent btn--huge" disabled={busy || feedback !== null || answer.trim() === ''}>
+              {t('kid.check')}
             </button>
           </div>
         )}

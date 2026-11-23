@@ -19,9 +19,25 @@ const PAIRS: [string, string][] = [
   ['accent-text', 'warn-bg'],
 ];
 
-function tokens(): Record<string, string> {
-  const root = css.slice(css.indexOf(':root {'), css.indexOf('}', css.indexOf(':root {')));
-  return Object.fromEntries([...root.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]]));
+// Child-area pairs (tokens declared on .kid).
+const KID_PAIRS: [string, string][] = [
+  ['kid-ink', 'kid-bg'],
+  ['kid-ink', 'kid-surface'],
+  ['kid-muted', 'kid-bg'],
+  ['kid-muted', 'kid-surface'],
+  ['kid-go-fg', 'kid-go'],
+  ['kid-ink', 'kid-star'],
+  ['kid-star-text', 'kid-bg'],
+  ['kid-star-text', 'kid-surface'],
+  ['kid-ok', 'kid-ok-bg'],
+  ['kid-almost', 'kid-almost-bg'],
+  ['kid-almost', 'kid-surface'],
+];
+
+function tokens(selector = ':root'): Record<string, string> {
+  const start = css.indexOf(`${selector} {`);
+  const block = css.slice(start, css.indexOf('}', start));
+  return Object.fromEntries([...block.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]]));
 }
 
 function luminance(hex: string): number {
@@ -43,5 +59,12 @@ describe('colour contrast', () => {
     expect(t[fg], fg).toBeDefined();
     expect(t[bg], bg).toBeDefined();
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  const kid = tokens('.kid');
+  it.each(KID_PAIRS)('child area: %s on %s is at least 4.5:1', (fg, bg) => {
+    expect(kid[fg], fg).toBeDefined();
+    expect(kid[bg], bg).toBeDefined();
+    expect(contrast(kid[fg], kid[bg])).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -738,11 +738,90 @@ a:focus-visible {
 
 /* --- child mode --- */
 
+/*
+ * Child area: warm "sticker" style. Tokens live on .kid so the parent UI keeps its own palette.
+ * Words to learn use Andika (made for beginning readers: single-storey a, distinct I/l, Cyrillic and
+ * Latin with diacritics); everything else uses Nunito. Spacing follows an 8px scale; touch targets
+ * are at least 48px, main actions 72px.
+ */
+.kid {
+  --kid-bg: #fff4dc;
+  --kid-surface: #ffffff;
+  --kid-ink: #3a2a12;
+  --kid-muted: #7a5a2b;
+  --kid-line: #f1ddb5;
+  --kid-lift: #e3c894;
+  --kid-go: #2b8236;
+  --kid-go-fg: #ffffff;
+  --kid-go-lift: #1d5e26;
+  --kid-star: #ff9f1c;
+  --kid-star-text: #b24f00;
+  --kid-ok: #1f6b28;
+  --kid-ok-bg: #e3f5df;
+  --kid-almost: #a63a12;
+  --kid-almost-bg: #fde6da;
+  --kid-word-font: 'Andika', 'Nunito', system-ui, sans-serif;
+  --kid-press: 5px;
+  min-height: 100vh;
+  padding: 8px 24px 40px;
+  background: var(--kid-bg);
+  color: var(--kid-ink);
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.kid h1 {
+  font-weight: 900;
+}
+
+.kid .muted {
+  color: var(--kid-muted);
+}
+
+/* chunky buttons that look pressable: a solid "lip" under the face, pushed in on tap */
+.kid .btn {
+  font-weight: 800;
+  border: 0;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+
+.kid .btn--accent {
+  background: var(--kid-go);
+  color: var(--kid-go-fg);
+  box-shadow: 0 var(--kid-press) 0 var(--kid-go-lift);
+}
+
+.kid .btn--ghost {
+  background: var(--kid-surface);
+  color: var(--kid-ink);
+  box-shadow: 0 var(--kid-press) 0 var(--kid-lift);
+}
+
+.kid .btn--ok {
+  background: var(--kid-ok-bg);
+  color: var(--kid-ok);
+  box-shadow: 0 var(--kid-press) 0 color-mix(in srgb, var(--kid-ok) 35%, var(--kid-ok-bg));
+}
+
+.kid .btn:not(:disabled):active {
+  transform: translateY(calc(var(--kid-press) - 1px));
+  box-shadow: 0 1px 0 var(--kid-lift);
+}
+
+.kid .btn--accent:not(:disabled):active {
+  box-shadow: 0 1px 0 var(--kid-go-lift);
+}
+
+.kid .btn:disabled {
+  opacity: 0.45;
+}
+
 .btn--huge {
-  min-height: 64px;
+  min-height: 72px;
   padding: 12px 32px;
-  border-radius: 16px;
-  font-size: 1.35rem;
+  border-radius: 18px;
+  font-size: 1.15rem;
 }
 
 .btn--ok {
@@ -750,29 +829,26 @@ a:focus-visible {
   color: #fff;
 }
 
-.kid {
-  --kid-bg: #fff6e0;
-  min-height: 100vh;
-  padding: 12px 16px 40px;
-  background: var(--kid-bg);
-  font-size: 20px;
-}
-
 .kid__top {
   display: flex;
   justify-content: flex-end;
+  min-height: 48px;
 }
 
-.kid__parent {
-  opacity: 0.7;
+.kid .kid__parent {
+  min-height: 48px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--kid-muted);
+  font-size: 0.8rem;
 }
 
 .kid__page {
-  max-width: 720px;
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .kid__center {
@@ -786,9 +862,9 @@ a:focus-visible {
 }
 
 .kid__hello {
-  font-size: 2.6rem;
+  font-size: 2.4rem;
   text-align: center;
-  margin-top: 4vh;
+  margin-top: 3vh;
 }
 
 .kid__card {
@@ -797,14 +873,14 @@ a:focus-visible {
   align-items: center;
   gap: 16px;
   padding: 24px;
-  background: var(--surface);
+  background: var(--kid-surface);
   border-radius: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 6px 0 var(--kid-line);
   text-align: center;
 }
 
 .kid__text {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   margin: 0;
 }
 
@@ -824,15 +900,15 @@ a:focus-visible {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 3px dashed var(--line);
-  color: var(--muted);
-  font-weight: 800;
+  border: 3px dashed var(--kid-line);
+  color: var(--kid-muted);
+  font-weight: 900;
 }
 
 .kid__week-dot.is-done {
-  border: 3px solid var(--ok);
-  background: var(--ok-bg);
-  color: var(--ok);
+  border: 3px solid var(--kid-go);
+  background: var(--kid-ok-bg);
+  color: var(--kid-ok);
 }
 
 .kid__month p {
@@ -840,7 +916,7 @@ a:focus-visible {
 }
 
 .kid__reward {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .stars {
@@ -849,30 +925,35 @@ a:focus-visible {
 }
 
 .stars__count {
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 900;
   text-align: center;
 }
 
 .stars__bar {
-  height: 14px;
-  margin-top: 6px;
+  height: 16px;
+  margin-top: 8px;
   border-radius: 999px;
-  background: var(--neutral-bg);
+  background: var(--kid-line, var(--neutral-bg));
   overflow: hidden;
 }
 
 .stars__fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #fcc419, #f08c00);
+  background: var(--kid-star, var(--accent));
 }
 
 /* --- training --- */
 
+/*
+ * On a tablet the on-screen keyboard covers ~40% of the height, so the whole task (word, letter boxes,
+ * input, buttons) stays compact at the top and the buttons sit right under the input.
+ */
 .train {
   align-items: center;
   text-align: center;
+  gap: 16px;
 }
 
 .train__status {
@@ -881,8 +962,16 @@ a:focus-visible {
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  color: var(--muted);
-  font-weight: 700;
+  min-height: 48px;
+  color: var(--kid-muted);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.train__round {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--kid-surface);
 }
 
 .train__dots {
@@ -893,30 +982,32 @@ a:focus-visible {
 }
 
 .train__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--line);
+  width: 22px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--kid-line);
 }
 
 .train__dot.is-done {
-  background: var(--ok);
+  background: var(--kid-go);
 }
 
 .train__dot.is-current {
-  background: var(--accent);
-  transform: scale(1.3);
+  width: 34px;
+  background: var(--kid-star);
 }
 
 .train__points {
-  color: var(--fg);
-  font-size: 1.3rem;
+  color: var(--kid-star-text);
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
 .train__prompt {
-  margin: 2vh 0 0;
-  font-size: clamp(2.4rem, 8vw, 4rem);
-  font-weight: 800;
+  margin: 64px 0 8px;
+  font-family: var(--kid-word-font);
+  font-size: clamp(2.6rem, 8vw, 4rem);
+  font-weight: 700;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -925,18 +1016,21 @@ a:focus-visible {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .letters__box {
   display: grid;
   place-items: center;
-  width: clamp(30px, 7vw, 44px);
-  height: clamp(38px, 9vw, 54px);
-  border-bottom: 4px solid var(--muted);
+  width: clamp(34px, 7vw, 48px);
+  height: clamp(42px, 9vw, 58px);
+  border: 3px solid var(--kid-line);
+  border-radius: 12px;
+  background: var(--kid-surface);
+  font-family: var(--kid-word-font);
   font-size: clamp(1.4rem, 5vw, 2rem);
-  font-weight: 800;
-  color: var(--primary);
+  font-weight: 700;
+  color: var(--kid-star-text);
 }
 
 .letters__gap {
@@ -944,41 +1038,46 @@ a:focus-visible {
 }
 
 .letters--correct .letters__box {
-  border-bottom-color: var(--ok);
-  color: var(--ok);
+  border-color: var(--kid-almost);
+  background: var(--kid-surface);
+  color: var(--kid-almost);
 }
 
 .train__reveal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--kid-almost-bg);
+  color: var(--kid-almost);
 }
 
 .train__reveal-label,
 .train__given {
   margin: 0;
-  color: var(--muted);
+  color: var(--kid-almost);
 }
 
 .train__given s {
-  color: var(--error);
+  font-family: var(--kid-word-font);
 }
 
 .train__timer {
   width: 100%;
   max-width: 420px;
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: var(--neutral-bg);
+  background: color-mix(in srgb, var(--kid-almost) 15%, transparent);
   overflow: hidden;
 }
 
 .train__timer-fill {
   height: 100%;
   width: 100%;
-  background: var(--muted);
+  background: var(--kid-almost);
   transform-origin: left;
   animation: countdown linear forwards;
 }
@@ -993,28 +1092,38 @@ a:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 28px;
   width: 100%;
 }
 
-.train__input {
+.kid .train__input {
   max-width: 560px;
   min-height: 72px;
+  font-family: var(--kid-word-font);
   font-size: 2rem;
+  font-weight: 700;
   text-align: center;
-  border: 3px solid var(--line);
+  color: var(--kid-ink);
+  border: 3px solid var(--kid-star);
   border-radius: 18px;
 }
 
-.train__input.is-correct {
-  border-color: var(--ok);
-  background: var(--ok-bg);
+.kid .train__input:focus-visible {
+  outline: 4px solid color-mix(in srgb, var(--kid-star) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.kid .train__input.is-correct {
+  border-color: var(--kid-go);
+  background: var(--kid-ok-bg);
+  color: var(--kid-ok);
   animation: pop 0.3s ease-out;
 }
 
-.train__input.is-wrong {
-  border-color: var(--error);
-  background: var(--error-bg);
+.kid .train__input.is-wrong {
+  border-color: var(--kid-almost);
+  background: var(--kid-almost-bg);
+  color: var(--kid-almost);
   animation: shake 0.4s ease-in-out;
 }
 
@@ -1027,22 +1136,35 @@ a:focus-visible {
 @keyframes shake {
   20%,
   60% {
-    transform: translateX(-10px);
+    transform: translateX(-8px);
   }
   40%,
   80% {
-    transform: translateX(10px);
+    transform: translateX(8px);
   }
 }
 
 .train__buttons {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.train__buttons .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 16px;
+}
+
+.train__buttons .btn--accent {
+  flex-grow: 1.5;
 }
 
 .train__praise {
+  width: 100%;
+  max-width: 560px;
   animation: pop 0.3s ease-out;
 }
 
@@ -1102,10 +1224,14 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .train__input.is-correct,
-  .train__input.is-wrong,
+  .kid .train__input.is-correct,
+  .kid .train__input.is-wrong,
   .train__praise {
     animation: none;
+  }
+
+  .kid .btn {
+    transition: none;
   }
 }
 
