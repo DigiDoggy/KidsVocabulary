@@ -189,7 +189,13 @@ function Trainer({ initial }: { initial: TrainingSession }) {
   return (
     <div className="kid__page train">
       <div className="train__status">
-        <span className="train__round">{t('kid.roundLabel', { n: item.round })}</span>
+        <span className="train__start">
+          {/* a way out at any moment: the session resumes where the child left it */}
+          <Link className="train__home" to="/child" aria-label={t('kid.home')}>
+            <span aria-hidden="true">🏠</span>
+          </Link>
+          <span className="train__round">{t('kid.roundLabel', { n: item.round })}</span>
+        </span>
         <span className="train__dots" role="img" aria-label={t('kid.wordOf', { n: item.position, total: item.roundSize })}>
           {Array.from({ length: item.roundSize }, (_, i) => (
             <span key={i} className={`train__dot${i < done ? ' is-done' : i === done ? ' is-current' : ''}`} />

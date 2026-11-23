@@ -1344,3 +1344,168 @@ main:focus {
   text-align: center;
   font-weight: 600;
 }
+
+/* --- feel: instant press feedback, materials, type, user preferences --- */
+
+/* feedback starts on press, not on release; no tap delay or grey flash on touch screens */
+a,
+button,
+input,
+select,
+.btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn {
+  transition:
+    transform 100ms ease-out,
+    background-color 150ms ease-out,
+    box-shadow 100ms ease-out;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* large type reads better slightly tighter; the word to learn keeps its letters apart for young readers */
+h1,
+.kid__hello,
+.picker__title {
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.train__prompt {
+  letter-spacing: 0.01em;
+}
+
+/* translucent top bar: content scrolls under it instead of a solid strip */
+.topbar {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom-color: color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+/* dialogs dim the page and arrive as a material, not a plain pop */
+.modal {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: scrim-in 180ms ease-out;
+}
+
+.modal__box {
+  animation: materialize 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes scrim-in {
+  from {
+    background: rgb(0 0 0 / 0);
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@keyframes materialize {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(6px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* training: way home and a progress bar that grows toward the current word */
+.train__start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.train__home {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--kid-surface);
+  box-shadow: 0 4px 0 var(--kid-line);
+  font-size: 1.3rem;
+  text-decoration: none;
+  transition:
+    transform 80ms ease-out,
+    box-shadow 80ms ease-out;
+}
+
+.train__home:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--kid-line);
+}
+
+.train__dot {
+  transition:
+    width 200ms ease-out,
+    background-color 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .train__dot,
+  .train__home {
+    transition: background-color 150ms ease-out;
+  }
+
+  .btn:not(:disabled):active,
+  .kid .btn:not(:disabled):active,
+  .train__home:active {
+    transform: none;
+  }
+
+  .modal {
+    animation: none;
+  }
+
+  .modal__box {
+    animation: fade-in 150ms ease-out;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .topbar {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .modal {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .kid {
+    --kid-line: #a0804a;
+    --kid-lift: #8a6a35;
+    --kid-muted: #5a4120;
+  }
+
+  .kid .btn--ghost,
+  .train__home {
+    outline: 2px solid var(--kid-ink);
+    outline-offset: -2px;
+  }
+
+  .topbar {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom-color: var(--fg);
+  }
+}
