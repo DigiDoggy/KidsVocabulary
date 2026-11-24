@@ -30,7 +30,12 @@ public final class WeekDtos {
     public record AddWordRequest(
             @NotBlank @Size(max = 60) String source,
             @NotBlank @Size(max = 60) String target,
-            @Size(max = 5) List<@Size(max = 60) String> extraAnswers) {
+            @Size(max = 5) List<@Size(max = 60) String> extraAnswers,
+            @Size(max = 32) String emoji) {
+    }
+
+    /** A blank or missing emoji removes the picture. */
+    public record EmojiRequest(@Size(max = 32) String emoji) {
     }
 
     /**
@@ -55,12 +60,12 @@ public final class WeekDtos {
      * @param extraAnswers other accepted spellings (normalised)
      */
     public record WordView(long id, long conceptId, WordSource source, String prompt, String answer,
-                           List<String> extraAnswers, BigDecimal points, String outcome) {
+                           List<String> extraAnswers, String emoji, BigDecimal points, String outcome) {
 
         static WordView of(WeekWord w) {
             List<String> accepted = w.getAcceptedAnswers();
             return new WordView(w.getId(), w.getConceptId(), w.getSource(), w.getPromptText(), w.getPrimaryAnswer(),
-                    accepted.subList(1, accepted.size()), w.getPoints(),
+                    accepted.subList(1, accepted.size()), w.getEmoji(), w.getPoints(),
                     w.getOutcome() == null ? null : w.getOutcome().name());
         }
     }

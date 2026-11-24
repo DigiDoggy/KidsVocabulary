@@ -18,6 +18,21 @@ class SeedDictionaryIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void concreteSeedWordsHaveAPictureAndEveryPictureIsOneEmoji() {
+        List<String> emojis = jdbc.queryForList("select emoji from concept where origin = 'SEED' and emoji is not null",
+                String.class);
+        assertThat(emojis).hasSizeGreaterThan(150);
+        assertThat(emojis).allSatisfy(e -> assertThat(com.kidsvocab.core.text.Emoji.clean(e)).isEqualTo(e));
+        assertThat(jdbc.queryForList("""
+                select c.topic from concept c join word_form f on f.concept_id = c.id and f.lang = 'en' and f.is_primary
+                where f.text = 'orange' order by c.topic""", String.class)).containsExactly("colours", "food");
+        assertThat(jdbc.queryForObject("""
+                select count(distinct c.emoji) from concept c join word_form f on f.concept_id = c.id
+                where f.lang = 'en' and f.is_primary and f.text = 'orange'""", Integer.class))
+                .as("the colour and the fruit get different pictures").isEqualTo(2);
+    }
+
+    @Test
     void everyConceptHasOnePrimaryFormPerLanguage() {
         List<Long> broken = jdbc.queryForList("""
                 select c.id from concept c

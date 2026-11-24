@@ -47,6 +47,9 @@ public class WeekWord {
     @Column(name = "accepted_answers", nullable = false, columnDefinition = "text[]")
     private List<String> acceptedAnswers;
 
+    /** Picture shown with the prompt; copied from the dictionary, changeable while the week is a draft. */
+    private String emoji;
+
     @Column(name = "attempt_no")
     private Integer attemptNo;
 
@@ -64,13 +67,22 @@ public class WeekWord {
     }
 
     public WeekWord(Long weekId, Long conceptId, WordSource source, String promptText, String primaryAnswer,
-                    List<String> acceptedAnswers) {
+                    List<String> acceptedAnswers, String emoji) {
         this.weekId = weekId;
         this.conceptId = conceptId;
         this.source = source;
         this.promptText = promptText;
         this.primaryAnswer = primaryAnswer;
         this.acceptedAnswers = List.copyOf(acceptedAnswers);
+        this.emoji = emoji;
+    }
+
+    public void changeEmoji(String emoji) {
+        this.emoji = emoji;
+    }
+
+    public String getEmoji() {
+        return emoji;
     }
 
     public void recordResult(Integer attemptNo, boolean hintUsed, boolean problematic, BigDecimal points,

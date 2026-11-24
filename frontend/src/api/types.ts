@@ -64,6 +64,8 @@ export interface WordView {
   prompt: string;
   answer: string;
   extraAnswers: string[];
+  /** One emoji shown with the prompt, or null. */
+  emoji: string | null;
   points: number | null;
   outcome: Outcome | null;
 }
@@ -190,6 +192,8 @@ export interface CurrentItem {
   round: number;
   position: number;
   prompt: string;
+  /** One emoji shown with the prompt, or null. */
+  emoji: string | null;
   hintMask: string | null;
   hintAvailable: boolean;
   roundSize: number;

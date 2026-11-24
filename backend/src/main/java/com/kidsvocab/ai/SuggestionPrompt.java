@@ -19,10 +19,12 @@ final class SuggestionPrompt {
         return """
                 You suggest vocabulary for children who learn to spell words in a foreign language.
                 Reply with JSON only, exactly in this shape:
-                {"words": [{"source": "...", "target": "...", "topic": "...", "english": "..."}]}
+                {"words": [{"source": "...", "target": "...", "topic": "...", "english": "...", "emoji": "..."}]}
                 Rules:
                 - "source" is the word in the child's native language, "target" is its translation,
                   "english" is the English word for the same meaning (equal to "target" for English).
+                - "emoji" is one emoji that a child would clearly recognise as this word (an apple for "apple");
+                  an empty string when no emoji shows the meaning clearly.
                 - Common, concrete, child-friendly everyday words; nouns in the singular, verbs in the infinitive.
                 - One word or a two-word phrase, no articles, no punctuation.
                 - Lower case, except where the language's normal spelling needs a capital letter

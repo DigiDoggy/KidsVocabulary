@@ -10,7 +10,9 @@ import com.kidsvocab.domain.study.WeekWord;
 import com.kidsvocab.domain.study.WeekWordRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 
 /** Rebuilds a {@link TrainingSession} from its record and event log. */
@@ -51,6 +53,17 @@ public class SessionLoader {
         return words.findByWeekIdOrderById(weekId).stream()
                 .map(w -> toCard(w, target))
                 .toList();
+    }
+
+    /** Pictures of the week's words by week word id; words without a picture are left out. */
+    public Map<Long, String> emojis(long weekId) {
+        Map<Long, String> result = new HashMap<>();
+        for (WeekWord w : words.findByWeekIdOrderById(weekId)) {
+            if (w.getEmoji() != null) {
+                result.put(w.getId(), w.getEmoji());
+            }
+        }
+        return result;
     }
 
     private static WordCard toCard(WeekWord w, Locale target) {

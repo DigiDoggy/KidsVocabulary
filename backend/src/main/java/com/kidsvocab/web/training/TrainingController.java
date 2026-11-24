@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /** Training for the child (and for the parent, who may try it too). */
 @RestController
@@ -51,15 +53,26 @@ public class TrainingController {
      * @param counts    whether this session's points count towards the month
      */
     public record SessionResponse(long id, long weekId, SessionRecord.Kind kind, TrainingSession.Status status,
-                                  int round, CurrentItem current, BigDecimal points, BigDecimal maxPoints,
+                                  int round, ItemView current, BigDecimal points, BigDecimal maxPoints,
                                   boolean counts, List<WordStateView> words) {
 
-        static SessionResponse of(SessionView v) {
+        static SessionResponse of(SessionView v, Map<Long, String> emojis) {
             var result = v.result();
             return new SessionResponse(v.record().getId(), v.record().getWeekId(), v.record().getKind(),
-                    v.session().status(), v.session().round(), v.current().orElse(null), result.points(),
+                    v.session().status(), v.session().round(), ItemView.of(v.current(), emojis), result.points(),
                     result.maxPoints(), v.record().getKind() == SessionRecord.Kind.FIRST_PASS,
                     result.words().stream().map(WordStateView::of).toList());
+        }
+    }
+
+    /** The current word as the client sees it: {@link CurrentItem} plus its picture ({@code null} if none). */
+    public record ItemView(long wordId, int round, int position, String prompt, String emoji, String hintMask,
+                           boolean hintAvailable, int roundSize, int remainingInRound) {
+
+        static ItemView of(Optional<CurrentItem> current, Map<Long, String> emojis) {
+            return current.map(c -> new ItemView(c.wordId(), c.round(), c.position(), c.prompt(),
+                    emojis.get(c.wordId()), c.hintMask(), c.hintAvailable(), c.roundSize(), c.remainingInRound()))
+                    .orElse(null);
         }
     }
 
@@ -79,7 +92,7 @@ public class TrainingController {
      */
     public record AnswerResponse(AnswerResult.Verdict verdict, String correctAnswer, int showCorrectAnswerFor,
                                  boolean becameProblematic, boolean roundFinished, boolean sessionFinished,
-                                 CurrentItem next, BigDecimal points) {
+                                 ItemView next, BigDecimal points) {
     }
 
     public record HintResponse(String hintMask, boolean hintAvailable) {
@@ -87,12 +100,12 @@ public class TrainingController {
 
     @PostMapping("/weeks/{weekId}/sessions")
     public SessionResponse start(CurrentUser user, @PathVariable long weekId) {
-        return SessionResponse.of(training.startOrResume(user, weekId));
+        return respond(training.startOrResume(user, weekId));
     }
 
     @GetMapping("/sessions/{sessionId}")
     public SessionResponse get(CurrentUser user, @PathVariable long sessionId) {
-        return SessionResponse.of(training.get(user, sessionId));
+        return respond(training.get(user, sessionId));
     }
 
     @PostMapping("/sessions/{sessionId}/answers")
@@ -102,8 +115,13 @@ public class TrainingController {
                 request.answer());
         AnswerResult r = outcome.result();
         return new AnswerResponse(r.verdict(), r.correctAnswer(), showCorrectAnswerSeconds, r.becameProblematic(),
-                r.roundFinished(), r.sessionFinished(), outcome.view().current().orElse(null),
+                r.roundFinished(), r.sessionFinished(),
+                ItemView.of(outcome.view().current(), training.emojis(outcome.view().record().getWeekId())),
                 outcome.view().result().points());
+    }
+
+    private SessionResponse respond(SessionView view) {
+        return SessionResponse.of(view, training.emojis(view.record().getWeekId()));
     }
 
     @PostMapping("/sessions/{sessionId}/hint")

@@ -71,10 +71,15 @@ class TrainingIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.current.hintMask").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.current.answerLength").doesNotExist()));
         long sessionId = s.get("id").asLong();
+        assertThat(s.get("current").get("emoji").asText()).as("seed animals have pictures")
+                .isIn("\uD83D\uDC15", "\uD83D\uDC08", "\uD83D\uDC04");
 
         JsonNode last = null;
         for (int i = 0; i < 3; i++) {
             last = answerCurrent(sessionId, true);
+            if (i < 2) {
+                assertThat(last.get("next").get("emoji").isTextual()).isTrue();
+            }
         }
         assertThat(last.get("sessionFinished").asBoolean()).isTrue();
         assertThat(last.get("next").isNull()).isTrue();

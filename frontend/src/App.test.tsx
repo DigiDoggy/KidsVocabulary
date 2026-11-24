@@ -35,8 +35,8 @@ function draft(overrides: Partial<Week> = {}): Week {
     points: null,
     maxPoints: null,
     words: [
-      { id: 1, conceptId: 11, source: 'CARRY_OVER', prompt: 'koer', answer: 'dog', extraAnswers: [], points: null, outcome: null },
-      { id: 2, conceptId: 12, source: 'MANUAL', prompt: 'värv', answer: 'colour', extraAnswers: ['color'], points: null, outcome: null },
+      { id: 1, conceptId: 11, source: 'CARRY_OVER', prompt: 'koer', answer: 'dog', extraAnswers: [], emoji: '🐕', points: null, outcome: null },
+      { id: 2, conceptId: 12, source: 'MANUAL', prompt: 'värv', answer: 'colour', extraAnswers: ['color'], emoji: null, points: null, outcome: null },
     ],
     ...overrides,
   };
@@ -169,7 +169,7 @@ describe('App', () => {
       const full = draft({ missing: 0 });
       full.words = [
         ...full.words,
-        { id: 3, conceptId: 13, source: 'MANUAL', prompt: 'hall', answer: 'grey', extraAnswers: ['gray'], points: null, outcome: null },
+        { id: 3, conceptId: 13, source: 'MANUAL', prompt: 'hall', answer: 'grey', extraAnswers: ['gray'], emoji: null, points: null, outcome: null },
       ];
       const api = mockApi({
         ...signedInParent,
@@ -186,10 +186,51 @@ describe('App', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
       expect(await screen.findByText('hall')).toBeInTheDocument();
-      expect(api.called('POST', '/weeks/5/words')[0].body).toEqual({ source: 'hall', target: 'grey', extraAnswers: ['gray'] });
+      expect(api.called('POST', '/weeks/5/words')[0].body).toEqual({
+        source: 'hall',
+        target: 'grey',
+        extraAnswers: ['gray'],
+        emoji: null,
+      });
 
       await userEvent.click(screen.getByRole('button', { name: 'Start the week now' }));
       expect(await screen.findByText('Running')).toBeInTheDocument();
+    });
+
+    it('changes and removes the picture of a word in a draft', async () => {
+      const withPuppy = draft();
+      withPuppy.words = [{ ...withPuppy.words[0], emoji: '🐶' }, withPuppy.words[1]];
+      const withoutPicture = draft();
+      withoutPicture.words = [{ ...withoutPicture.words[0], emoji: null }, withoutPicture.words[1]];
+      const replies = [withPuppy, withoutPicture];
+      const api = mockApi({
+        ...signedInParent,
+        'GET /weeks/5': draft(),
+        'PUT /weeks/5/words/1/emoji': () => ({ body: replies.shift() }),
+      });
+      renderAt('/weeks/5');
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Change the picture for "koer"' }));
+      const field = screen.getByLabelText('Picture for "koer"');
+      const editor = within(field.closest('form') as HTMLElement);
+      expect(field).toHaveValue('🐕');
+      await userEvent.clear(field);
+      await userEvent.paste('ab');
+      expect(screen.getByText('Enter a single emoji')).toBeInTheDocument();
+      expect(editor.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+      await userEvent.clear(field);
+      await userEvent.paste('🐶');
+      await userEvent.click(editor.getByRole('button', { name: 'Save' }));
+      expect(await screen.findByRole('button', { name: 'Change the picture for "koer"' })).toHaveTextContent('🐶');
+      expect(api.called('PUT', '/weeks/5/words/1/emoji')[0].body).toEqual({ emoji: '🐶' });
+
+      await userEvent.click(screen.getByRole('button', { name: 'Change the picture for "koer"' }));
+      await userEvent.click(screen.getByRole('button', { name: 'No picture' }));
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Change the picture for "koer"' })).toHaveTextContent('+'),
+      );
+      expect(api.called('PUT', '/weeks/5/words/1/emoji')[1].body).toEqual({ emoji: null });
     });
 
     it('fills up with the chosen topic', async () => {

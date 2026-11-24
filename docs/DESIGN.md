@@ -152,8 +152,9 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 | GET | `/weeks/{weekId}` | set + status + per-word results once closed |
 | PUT | `/weeks/{weekId}` | `{startDate?, wordCount}` (DRAFT only; word count not below the words already in the set) |
 | DELETE | `/weeks/{weekId}` | delete a draft |
-| POST | `/weeks/{weekId}/words` | add manually `{source, target, extraAnswers[]}`; reuses a dictionary concept when the pair is known |
+| POST | `/weeks/{weekId}/words` | add manually `{source, target, extraAnswers[], emoji?}`; reuses a dictionary concept when the pair is known |
 | DELETE | `/weeks/{weekId}/words/{wordId}` | remove a word (not a carried-over one) |
+| PUT | `/weeks/{weekId}/words/{wordId}/emoji` | `{emoji}` → set or clear (blank) the word's picture (DRAFT only) |
 | POST | `/weeks/{weekId}/words/{wordId}/replace` | `{topic?}` → replace with another suggestion |
 | POST | `/weeks/{weekId}/suggest` | `{topic?}` fill up to `wordCount` (AI → dictionary fallback) |
 | POST | `/weeks/{weekId}/launch` | full set required; a week for this Monday → `ACTIVE`, for next Monday → `SCHEDULED` |
@@ -470,7 +471,106 @@ Each milestone ends in a working state with green tests and a demo.
 | **7. Child UI** | Profile picker, home screen (points, progress), training screen: large word, large input, visual feedback (colour/icon/animation), hint, summary; tablet-first | The child trains on a tablet |
 | **8. Polish** | ru/et i18n, accessibility, error handling/offline retry, e2e smoke (Playwright), README | MVP done |
 
-Out of MVP scope (later): word pronunciation (Web Speech API), pictures for words, PWA/offline, more target languages, separate child login, parent notifications.
+Out of MVP scope (later): PWA/offline, more target languages, separate child login, parent notifications.
+Pronunciation, pictures and game modes are planned in §5.1.
+
+### 5.1 Post-MVP milestones: making practice fun
+
+Goal: keep the child coming back because training is fun, not only because of the monthly reward.
+The scoring rules (§3.2) and the monthly result stay unchanged in these milestones.
+
+| Milestone | Scope | Outcome |
+|---|---|---|
+| **9. Sound, pictures, reactions** | Pronunciation, an emoji per word, playful feedback animations and sounds | Every word is heard and seen, every answer gets a funny reaction |
+| **10. Game modes** | Mode menu, parent game tasks; choose from 4, scrambled letters, word search grid (unscored demo) | The child can play with words in other ways |
+| **11. Word garden** | One plant per learned word that grows with reviews; review session from the garden | The child collects and looks after words |
+
+#### Milestone 9 — sound, pictures, reactions
+
+Pronunciation and emoji belong to the scored typing mode (the current training) only; the demo game
+modes of milestone 10 do not use them.
+
+- **Pronunciation.** Browser Web Speech API (`speechSynthesis`), target language only (en/de), no backend.
+  The word is spoken automatically after a correct answer and after the "wrong" sound; the correct-answer
+  panel shown after a mistake has a "Listen" button. If the device has no voice for the language, the
+  button is hidden and nothing is spoken.
+- **Emoji per word.** New nullable `concept.emoji` and `week_word.emoji` columns (V7). An emoji is exactly
+  one grapheme cluster drawn as a picture (`core.text.Emoji`). V7 fills emoji for the seed dictionary where
+  one picture clearly means the word (animals, food, transport, ...); abstract words stay without.
+  AI suggestions return an optional emoji (invalid ones are dropped); a new AI concept keeps it, and a seed
+  concept completed with a German word gets it only if it had none. A week word copies the concept's
+  emoji and is frozen with the set; while the week is a draft the parent can set or clear it
+  (`PUT /weeks/{weekId}/words/{wordId}/emoji {emoji}`) or give one when typing a word in. This changes the
+  shared dictionary never, the parent's own words always. The child sees the emoji above the prompt in the
+  typing mode (`current.emoji` in the session API).
+- **Reactions.** Pure CSS/SVG animations, no image assets per reaction:
+  - correct: a thumbs-up pops out of the word and slides back, or a winking smiley (picked at random);
+  - wrong: a short "sad trombone" sound and a wagging index finger ("no-no"), then the correct answer
+    as today (5 s). The reaction stays gentle: funny, never mocking.
+  - Sounds are synthesised with the Web Audio API (no third-party audio files, no licensing questions).
+  - Sound toggle on the training screen, controlled by the child: one icon button that shows the action
+    it will do — while sound is on it shows "mute", while sound is off it shows "sound on"; tapping it
+    switches the state and the icon. The choice is remembered per device. There is no parent setting.
+  - Animations follow `prefers-reduced-motion`.
+
+#### Milestone 10 — game modes
+
+All game modes are **demo modes**: unscored, they never change week points, the monthly result or the
+word history. The goal is to build them, let the child play and see what works. Only the current typing
+mode scores points (§3.2).
+
+- **Mode menu (child).** The child home screen gets a menu: "Training" (the scored typing mode, as
+  today) and the game modes. A game mode started from the menu uses this week's words.
+- **Game tasks (parent).** The parent can give the child extra tasks: a game mode plus a word list. Words
+  are entered manually and/or filled by AI, the same way as in the week builder. Tasks appear in the
+  child's mode menu; they are unscored like every game mode.
+- **Choose from 4:** the prompt with four target-language words; distractors come from the same word
+  list, then from the child's learned words, then from the dictionary of the same topic.
+- **Scrambled letters:** the letters of the word as tiles; the child taps them in order. Wrong tap =
+  the tile shakes. Multi-word answers keep the space as a fixed tile.
+- **Word search grid (filword):** a square grid (6x6 to 10x10 depending on level and word length) with
+  the words hidden horizontally and vertically (diagonals for A2). The child sees the native prompts
+  and swipes over letters; a found word is highlighted and gets a reaction from milestone 9.
+  Word placement is deterministic from a seed (pure function in `core`, 100% coverage like the rest).
+  The free cells are filled by AI with letters of the target alphabet (so the grid looks like real
+  words, not random noise, and contains no extra accidental answers); without an AI provider or on an
+  AI error, random letters of the target alphabet are used.
+
+#### Milestone 11 — word garden
+
+- Every learned word becomes a plant in the child's garden. Kinds: tree with fruit (apple, cherry, pear),
+  sunflower, tulip, cactus, ... — the kind is picked at random when the word is first learned and stays.
+- Growth stages: `SEED` (seed in the soil) → `SPROUT` → `YOUNG` → `BLOOMING` → `FRUIT`. The word enters
+  as `SEED` when learned in a week (a `HARD` word too); each successful review after a growing interval
+  (about 1, 2, 4, 8 weeks) moves it up one stage. A word that is overdue looks thirsty (drooping leaves)
+  but never dies or loses a stage; a successful review perks it up.
+- Review session: "Water the garden" picks due words (overdue first, at most one week's size), trains
+  them like a practice session and moves plants up. It does not change week points.
+- Garden screen: plants grouped in beds by study month; tap a plant to see the word and its emoji.
+- Storage: `child_word` gets `plant_kind smallint`, `growth_stage smallint`, `next_review_on date`
+  (a few bytes per word; even 1000 words is tens of kilobytes). Pictures are not stored per word:
+  one shared set of SVG drawings (about 8 kinds x 5 stages = 40 small SVGs, ~100-150 KB in total,
+  cached by the browser), so the garden costs the same whatever the number of words.
+
+#### Decisions (2026-11-24)
+
+- Points are scored only in the current typing mode; pronunciation and emoji are added to that mode only.
+- Choose from 4, scrambled letters and the word search are unscored demo modes, picked by the child from a
+  mode menu or given by the parent as tasks with their own word lists (manual or AI).
+- Sound is switched on and off by the child with one toggle icon on the training screen; no parent setting.
+
+### 5.2 Future: mobile app (open item)
+
+A mobile version (native app or installable PWA) must keep its on-device database small. The approach is
+not designed yet; ideas to weigh when the time comes:
+
+- The server stays the source of truth; the device keeps only what the child needs offline: the current
+  and next week, plus the words already learned (for reviews and the garden), not the whole shared dictionary.
+- Dictionary data comes on demand, per language pair and topic, and can be evicted again.
+- Old training history is compacted: once a month is reported, raw attempts are folded into per-word
+  totals (attempts, errors, last seen) and the raw rows are dropped from the device.
+- Pictures stay emoji and the garden uses the one shared SVG set, so no per-word images are stored.
+- Measure first: estimate bytes per word and per training session, and set a size budget per child.
 
 ### Project layout
 

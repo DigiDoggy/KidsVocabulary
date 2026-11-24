@@ -25,6 +25,7 @@ function item(overrides: Partial<CurrentItem> = {}): CurrentItem {
     round: 1,
     position: 1,
     prompt: 'koer',
+    emoji: null,
     hintMask: null,
     hintAvailable: true,
     roundSize: 2,
@@ -83,10 +84,80 @@ async function type(text: string) {
   await userEvent.click(screen.getByRole('button', { name: 'Kontrolli' }));
 }
 
+/** A fake speech engine with one English voice; returns what it was asked to say. */
+function stubSpeech() {
+  const spoken: string[] = [];
+  vi.stubGlobal('speechSynthesis', {
+    getVoices: () => [{ lang: 'en-GB', localService: true, name: 'Test voice' }],
+    speak: (u: { text: string }) => spoken.push(u.text),
+    cancel: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  });
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
+    },
+  );
+  return spoken;
+}
+
 describe('training screen', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    localStorage.clear();
     resetHttpState();
+  });
+
+  it('shows the picture, cheers a right answer with a thumbs-up or a wink and says the word', async () => {
+    const spoken = stubSpeech();
+    renderTraining({
+      'POST /weeks/5/sessions': session({ current: item({ emoji: '🐕' }) }),
+      'POST /sessions/33/answers': answer({ verdict: 'CORRECT', correctAnswer: 'dog', next: cat, points: 2 }),
+    });
+
+    expect(await screen.findByText('🐕')).toBeInTheDocument();
+    await type('dog');
+
+    expect(['thumb', 'wink']).toContain((await screen.findByTestId('reaction')).dataset.kind);
+    await waitFor(() => expect(spoken).toEqual(['dog']));
+  });
+
+  it('wags a finger after a mistake and lets the child listen to the right word', async () => {
+    const spoken = stubSpeech();
+    renderTraining({
+      'POST /sessions/33/answers': answer({ verdict: 'WRONG', correctAnswer: 'dog', next: cat, showCorrectAnswerFor: 5 }),
+    });
+
+    await type('dgo');
+
+    expect((await screen.findByTestId('reaction')).dataset.kind).toBe('finger');
+    await userEvent.click(screen.getByRole('button', { name: /Kuula/ }));
+    expect(spoken).toEqual(['dog']);
+  });
+
+  it('has a sound switch whose icon shows what a tap does, remembered on the device', async () => {
+    const spoken = stubSpeech();
+    renderTraining({
+      'POST /sessions/33/answers': answer({ verdict: 'CORRECT', correctAnswer: 'dog', next: cat, points: 2 }),
+    });
+
+    const mute = await screen.findByRole('button', { name: 'Lülita heli välja' });
+    expect(mute).toHaveTextContent('🔇');
+    await userEvent.click(mute);
+    const unmute = screen.getByRole('button', { name: 'Lülita heli sisse' });
+    expect(unmute).toHaveTextContent('🔊');
+    expect(localStorage.getItem('kv.sound')).toBe('off');
+
+    await type('dog');
+    await screen.findByTestId('reaction');
+    await new Promise((r) => setTimeout(r, 700));
+    expect(spoken).toEqual([]);
   });
 
   it('praises a correct answer and moves on to the next word', async () => {
@@ -114,6 +185,7 @@ describe('training screen', () => {
 
     expect(await screen.findByText('Õigesti on nii:')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'dog' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kuula/ })).toBeNull(); // no voice on this device
     expect(screen.getByText('dgo').tagName).toBe('S');
     expect(screen.queryByText('kass')).toBeNull(); // the right spelling stays for the configured time
     expect(await screen.findByText('kass', {}, { timeout: 2500 })).toBeInTheDocument();

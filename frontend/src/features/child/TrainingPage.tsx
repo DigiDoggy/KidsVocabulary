@@ -6,14 +6,27 @@ import type { AnswerResponse, CurrentItem, TrainingSession } from '../../api/typ
 import { ErrorMessage, Spinner } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { usePageTitle } from '../../lib/a11y';
+import {
+  playCorrect,
+  playWrong,
+  speak,
+  unlockAudio,
+  useCanSpeak,
+  useSoundSetting,
+  WRONG_SOUND_MS,
+} from '../../lib/sound';
 import { useLoad } from '../../lib/useLoad';
 import { useChildContext } from './ChildLayout';
+import { Reaction, type ReactionKind } from './Reaction';
 import { Stars } from './Stars';
 
 /** How long the "correct" feedback stays before the next word (the child may tap on sooner). */
 export const CORRECT_PAUSE_MS = 1200;
 
 const PRAISE_KEYS = ['kid.praise1', 'kid.praise2', 'kid.praise3'];
+const CORRECT_REACTIONS: ReactionKind[] = ['thumb', 'wink'];
+/** The word is spoken right after the cheerful sound of a correct answer. */
+const SPEAK_AFTER_CORRECT_MS = 450;
 
 type Phase =
   | { kind: 'question' }
@@ -59,6 +72,13 @@ function Trainer({ initial }: { initial: TrainingSession }) {
   const [error, setError] = useState<unknown>(null);
   const input = useRef<HTMLInputElement>(null);
   const praise = useRef(PRAISE_KEYS[0]);
+  const reaction = useRef<ReactionKind>('thumb');
+  const answers = useRef(0);
+  const [soundOn, toggleSound] = useSoundSetting();
+  const soundOnRef = useRef(soundOn);
+  soundOnRef.current = soundOn;
+  const targetLang = home.child.targetLang;
+  const canSpeak = useCanSpeak(targetLang);
 
   const sessionOver = phase.kind === 'finished' || phase.kind === 'closed';
   useEffect(() => {
@@ -95,6 +115,23 @@ function Trainer({ initial }: { initial: TrainingSession }) {
     // moveOn only reads state that is stable while this phase lasts
   }, [phase]);
 
+  // sounds of the answer: an effect first, then the word in the target language (if sound is on)
+  useEffect(() => {
+    if ((phase.kind !== 'correct' && phase.kind !== 'wrong') || !soundOnRef.current) return;
+    const word = phase.result.correctAnswer;
+    let delay: number;
+    if (phase.kind === 'correct') {
+      playCorrect();
+      delay = SPEAK_AFTER_CORRECT_MS;
+    } else {
+      playWrong();
+      delay = WRONG_SOUND_MS;
+    }
+    if (!word) return;
+    const timer = setTimeout(() => soundOnRef.current && speak(word, targetLang), delay);
+    return () => clearTimeout(timer);
+  }, [phase, targetLang]);
+
   async function handleFailure(e: unknown) {
     if (e instanceof ApiError && e.code === 'SESSION_CLOSED') {
       setPhase({ kind: 'closed' });
@@ -112,14 +149,17 @@ function Trainer({ initial }: { initial: TrainingSession }) {
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!item || busy || phase.kind !== 'question' || answer.trim() === '') return; // A5: blank is not an attempt
+    unlockAudio();
     setBusy(true);
     setError(null);
     try {
       const result = await submitAnswer(initial.id, item.wordId, item.round, answer);
       if (result.verdict === 'IGNORED') return;
       setPoints(result.points);
+      answers.current += 1;
       if (result.verdict === 'CORRECT') {
         praise.current = PRAISE_KEYS[Math.floor(Math.random() * PRAISE_KEYS.length)];
+        reaction.current = CORRECT_REACTIONS[Math.floor(Math.random() * CORRECT_REACTIONS.length)];
         setPhase({ kind: 'correct', result });
       } else {
         setPhase({ kind: 'wrong', result, given: answer });
@@ -194,6 +234,16 @@ function Trainer({ initial }: { initial: TrainingSession }) {
           <Link className="train__home" to="/child" aria-label={t('kid.home')}>
             <span aria-hidden="true">🏠</span>
           </Link>
+          <button
+            type="button"
+            className="train__sound"
+            aria-label={soundOn ? t('kid.soundOff') : t('kid.soundOn')}
+            title={soundOn ? t('kid.soundOff') : t('kid.soundOn')}
+            onClick={toggleSound}
+          >
+            {/* the icon shows what a tap will do */}
+            <span aria-hidden="true">{soundOn ? '🔇' : '🔊'}</span>
+          </button>
           <span className="train__round">{t('kid.roundLabel', { n: item.round })}</span>
         </span>
         <span className="train__dots" role="img" aria-label={t('kid.wordOf', { n: item.position, total: item.roundSize })}>
@@ -207,14 +257,33 @@ function Trainer({ initial }: { initial: TrainingSession }) {
         </span>
       </div>
 
-      <p className="train__prompt" lang={home.child.nativeLang}>
-        {item.prompt}
-      </p>
+      <div className="train__stage">
+        {item.emoji && (
+          <p className="train__emoji" aria-hidden="true">
+            {item.emoji}
+          </p>
+        )}
+        <p className="train__prompt" lang={home.child.nativeLang}>
+          {item.prompt}
+        </p>
+        {feedback && (
+          <Reaction key={answers.current} kind={feedback === 'correct' ? reaction.current : 'finger'} />
+        )}
+      </div>
 
       {feedback === 'wrong' && phase.kind === 'wrong' ? (
         <div className="train__reveal" role="status">
           <p className="train__reveal-label">{t('kid.correctIs')}</p>
           <Letters word={phase.result.correctAnswer ?? ''} variant="correct" />
+          {canSpeak && phase.result.correctAnswer && (
+            <button
+              type="button"
+              className="btn btn--ghost train__listen"
+              onClick={() => speak(phase.result.correctAnswer ?? '', targetLang)}
+            >
+              <span aria-hidden="true">🔊</span> {t('kid.listen')}
+            </button>
+          )}
           <p className="train__given">
             {t('kid.youWrote')} <s>{phase.given}</s>
           </p>

@@ -220,7 +220,13 @@
       "hint": "Vihje",
       "points": "Punktid",
       "outcome": "Tulemus"
-    }
+    },
+    "addEmoji": "Pilt (valikuline)",
+    "emojiHint": "Üks emotikon, nt emotikonide klaviatuurilt",
+    "emojiInvalid": "Sisesta üks emotikon",
+    "changeEmoji": "Muuda sõna „{word}“ pilti",
+    "emojiFor": "Sõna „{word}“ pilt",
+    "removeEmoji": "Pildita"
   },
   "month": {
     "inProgress": "käib",
@@ -324,7 +330,10 @@
     "counts": "Need tähed lähevad kuu arvestusse.",
     "home": "Avalehele",
     "trainingTitle": "Harjutamine",
-    "starsLabel": "Tähed:"
+    "starsLabel": "Tähed:",
+    "soundOff": "Lülita heli välja",
+    "soundOn": "Lülita heli sisse",
+    "listen": "Kuula"
   },
   "crash": {
     "title": "Midagi läks valesti",

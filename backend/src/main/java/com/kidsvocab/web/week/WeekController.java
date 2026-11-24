@@ -4,6 +4,7 @@ import com.kidsvocab.app.week.WeekService;
 import com.kidsvocab.security.CurrentUser;
 import com.kidsvocab.web.week.WeekDtos.AddWordRequest;
 import com.kidsvocab.web.week.WeekDtos.CreateWeekRequest;
+import com.kidsvocab.web.week.WeekDtos.EmojiRequest;
 import com.kidsvocab.web.week.WeekDtos.TopicRequest;
 import com.kidsvocab.web.week.WeekDtos.UpdateWeekRequest;
 import com.kidsvocab.web.week.WeekDtos.WeekResponse;
@@ -70,7 +71,13 @@ public class WeekController {
     public WeekResponse addWord(CurrentUser user, @PathVariable long weekId,
                                 @Valid @RequestBody AddWordRequest request) {
         return WeekResponse.of(weeks.addManualWord(user, weekId, request.source(), request.target(),
-                request.extraAnswers()));
+                request.extraAnswers(), request.emoji()));
+    }
+
+    @PutMapping("/weeks/{weekId}/words/{wordId}/emoji")
+    public WeekResponse changeEmoji(CurrentUser user, @PathVariable long weekId, @PathVariable long wordId,
+                                    @Valid @RequestBody EmojiRequest request) {
+        return WeekResponse.of(weeks.changeEmoji(user, weekId, wordId, request.emoji()));
     }
 
     @DeleteMapping("/weeks/{weekId}/words/{wordId}")

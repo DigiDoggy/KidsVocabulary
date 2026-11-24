@@ -24,7 +24,8 @@ public class GeminiWordSuggestionProvider extends HttpWordSuggestionProvider {
                                     "source", Map.of("type", "STRING"),
                                     "target", Map.of("type", "STRING"),
                                     "topic", Map.of("type", "STRING"),
-                                    "english", Map.of("type", "STRING")),
+                                    "english", Map.of("type", "STRING"),
+                                    "emoji", Map.of("type", "STRING")),
                             "required", List.of("source", "target")))),
             "required", List.of("words"));
 

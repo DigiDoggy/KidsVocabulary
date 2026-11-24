@@ -4,6 +4,7 @@ import com.kidsvocab.app.AppException;
 import com.kidsvocab.app.AppException.Code;
 import com.kidsvocab.core.month.CarryOverPlanner;
 import com.kidsvocab.core.text.AnswerNormalizer;
+import com.kidsvocab.core.text.Emoji;
 import com.kidsvocab.core.week.WeekCalendar;
 import com.kidsvocab.domain.child.Child;
 import com.kidsvocab.domain.child.ChildRepository;
@@ -37,6 +38,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -142,10 +144,13 @@ public class WeekService {
 
     // --- words -----------------------------------------------------------------------------------
 
-    /** Adds a word typed by the parent: native word plus its translation and optional extra spellings. */
+    /**
+     * Adds a word typed by the parent: native word plus its translation, optional extra spellings and an
+     * optional emoji (the dictionary's emoji is used when none is given).
+     */
     @Transactional
     public WeekDetails addManualWord(CurrentUser user, long weekId, String source, String target,
-                                     List<String> extraAnswers) {
+                                     List<String> extraAnswers, String emoji) {
         StudyWeek week = draft(user, weekId);
         Child child = childOf(week);
         requireRoom(week);
@@ -157,6 +162,7 @@ public class WeekService {
         if (nativeNorm.equals(targetNorm)) {
             throw new AppException(Code.VALIDATION, "The translation must differ from the word");
         }
+        String picture = emojiOrNull(emoji);
         long conceptId = dictionary.findPair(child.getNativeLang(), nativeNorm, child.getTargetLang(), targetNorm,
                 user.parentId()).orElseGet(() -> createManualConcept(child, source, target, extraAnswers));
         Card card = card(child, conceptId);
@@ -167,8 +173,23 @@ public class WeekService {
                 accepted.add(normalized);
             }
         }
-        addCard(child, week, new Card(conceptId, card.prompt(), card.primaryAnswer(), List.copyOf(accepted)),
-                WordSource.MANUAL);
+        ownConcept(user, conceptId).filter(c -> picture != null).ifPresent(c -> c.changeEmoji(picture));
+        addCard(child, week, new Card(conceptId, card.prompt(), card.primaryAnswer(), List.copyOf(accepted),
+                picture != null ? picture : card.emoji()), WordSource.MANUAL);
+        return details(week);
+    }
+
+    /**
+     * Sets or clears the picture of a word in a draft. A word the parent typed in also keeps the picture in
+     * the parent's dictionary, so it comes back next time; the shared dictionary is not changed.
+     */
+    @Transactional
+    public WeekDetails changeEmoji(CurrentUser user, long weekId, long wordId, String emoji) {
+        StudyWeek week = draft(user, weekId);
+        WeekWord word = words.findByIdAndWeekId(wordId, week.getId()).orElseThrow(() -> AppException.notFound("Word"));
+        String picture = emojiOrNull(emoji);
+        word.changeEmoji(picture);
+        ownConcept(user, word.getConceptId()).ifPresent(c -> c.changeEmoji(picture));
         return details(week);
     }
 
@@ -360,7 +381,7 @@ public class WeekService {
                     });
         }
         words.save(new WeekWord(week.getId(), card.conceptId(), source, card.prompt(), card.primaryAnswer(),
-                card.acceptedAnswers()));
+                card.acceptedAnswers(), card.emoji()));
         words.flush();
     }
 
@@ -383,6 +404,22 @@ public class WeekService {
         }
         forms.flush();
         return concept.getId();
+    }
+
+    private Optional<Concept> ownConcept(CurrentUser user, long conceptId) {
+        return concepts.findById(conceptId).filter(c -> Long.valueOf(user.parentId()).equals(c.getOwnerParentId()));
+    }
+
+    /** Blank means "no picture"; anything else must be exactly one emoji. */
+    private static String emojiOrNull(String emoji) {
+        if (emoji == null || emoji.isBlank()) {
+            return null;
+        }
+        String clean = Emoji.clean(emoji);
+        if (clean == null) {
+            throw new AppException(Code.VALIDATION, "The picture must be a single emoji");
+        }
+        return clean;
     }
 
     private Card card(Child child, long conceptId) {

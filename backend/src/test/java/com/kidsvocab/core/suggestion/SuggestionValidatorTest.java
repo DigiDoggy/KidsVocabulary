@@ -31,6 +31,17 @@ class SuggestionValidatorTest {
     }
 
     @Test
+    void keepsAValidEmojiAndDropsAnythingElse() {
+        String apple = new String(Character.toChars(0x1F34E));
+        assertThat(validator.validate(List.of(
+                        new SuggestedWord("koer", "dog", "animals", "dog", " " + apple + " "),
+                        new SuggestedWord("kass", "cat", "animals", "cat", "cat"),
+                        new SuggestedWord("lehm", "cow", "animals", "cow", "")), "et", "en", NONE))
+                .extracting(ValidatedWord::emoji)
+                .containsExactly(apple, null, null);
+    }
+
+    @Test
     void keepsWordsWithUnknownTopicButDropsTheTopic() {
         assertThat(validator.validate(List.of(
                         new SuggestedWord("kass", "cat", "pets"),

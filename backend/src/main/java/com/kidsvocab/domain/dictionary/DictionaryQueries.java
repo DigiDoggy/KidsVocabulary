@@ -31,8 +31,10 @@ public class DictionaryQueries {
      * @param prompt          primary native form
      * @param primaryAnswer   primary target form
      * @param acceptedAnswers all normalised target forms, primary first
+     * @param emoji           the concept's picture, or {@code null}
      */
-    public record Card(long conceptId, String prompt, String primaryAnswer, List<String> acceptedAnswers) {
+    public record Card(long conceptId, String prompt, String primaryAnswer, List<String> acceptedAnswers,
+                       String emoji) {
     }
 
     /** Criteria for picking new words from the shared dictionary. */
@@ -45,11 +47,13 @@ public class DictionaryQueries {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("id", conceptId).addValue("native", nativeLang).addValue("target", targetLang);
         List<String[]> head = jdbc.query("""
-                select n.text as prompt, t.text as answer
+                select n.text as prompt, t.text as answer, c.emoji
                 from word_form n
                 join word_form t on t.concept_id = n.concept_id and t.lang = :target and t.is_primary
+                join concept c on c.id = n.concept_id
                 where n.concept_id = :id and n.lang = :native and n.is_primary
-                """, params, (rs, i) -> new String[]{rs.getString("prompt"), rs.getString("answer")});
+                """, params, (rs, i) -> new String[]{rs.getString("prompt"), rs.getString("answer"),
+                rs.getString("emoji")});
         if (head.isEmpty()) {
             return Optional.empty();
         }
@@ -58,7 +62,8 @@ public class DictionaryQueries {
                 where concept_id = :id and lang = :target
                 order by is_primary desc, id
                 """, params, String.class);
-        return Optional.of(new Card(conceptId, head.getFirst()[0], head.getFirst()[1], answers));
+        String[] row = head.getFirst();
+        return Optional.of(new Card(conceptId, row[0], row[1], answers, row[2]));
     }
 
     /** Finds a concept whose primary native form and some target form match, shared or owned by the parent. */

@@ -156,12 +156,15 @@ public class AiFirstWordSource implements WordSuggestionSource {
             incomplete.ifPresent(id -> {
                 forms.save(new WordForm(id, request.targetLang(), word.target(), word.targetNormalized(), true));
                 forms.flush();
+                concepts.findById(id).filter(c -> c.getEmoji() == null && word.emoji() != null)
+                        .ifPresent(c -> c.changeEmoji(word.emoji()));
             });
             // otherwise the native word already means something else in this language
             return incomplete.filter(id -> !excludeConcepts.contains(id));
         }
         Concept concept = concepts.save(new Concept(word.topic(), Concept.difficultyOf(word.target()),
                 Concept.Origin.AI, null, clock.instant()));
+        concept.changeEmoji(word.emoji());
         forms.save(new WordForm(concept.getId(), request.nativeLang(), word.source(), word.sourceNormalized(), true));
         forms.save(new WordForm(concept.getId(), request.targetLang(), word.target(), word.targetNormalized(), true));
         forms.flush();

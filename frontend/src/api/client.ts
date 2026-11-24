@@ -82,8 +82,11 @@ export const getWeek = (weekId: number) => get<Week>(`/weeks/${weekId}`);
 export const updateWeek = (weekId: number, wordCount: number, startDate?: string) =>
   put<Week>(`/weeks/${weekId}`, { wordCount, startDate });
 export const deleteWeek = (weekId: number) => del(`/weeks/${weekId}`);
-export const addWord = (weekId: number, source: string, target: string, extraAnswers: string[]) =>
-  post<Week>(`/weeks/${weekId}/words`, { source, target, extraAnswers });
+export const addWord = (weekId: number, source: string, target: string, extraAnswers: string[], emoji?: string) =>
+  post<Week>(`/weeks/${weekId}/words`, { source, target, extraAnswers, emoji: emoji || null });
+/** Sets the word's picture; an empty value removes it. */
+export const setWordEmoji = (weekId: number, wordId: number, emoji: string) =>
+  put<Week>(`/weeks/${weekId}/words/${wordId}/emoji`, { emoji: emoji || null });
 export const removeWord = (weekId: number, wordId: number) =>
   request<Week>('DELETE', `/weeks/${weekId}/words/${wordId}`);
 export const replaceWord = (weekId: number, wordId: number, topic?: string) =>

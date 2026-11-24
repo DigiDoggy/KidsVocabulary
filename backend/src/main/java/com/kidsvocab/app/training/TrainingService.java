@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,6 +55,12 @@ public class TrainingService {
         this.children = children;
         this.lifecycle = lifecycle;
         this.clock = clock;
+    }
+
+    /** Pictures of a week's words by week word id (the caller has already been allowed to see the week). */
+    @Transactional(readOnly = true)
+    public Map<Long, String> emojis(long weekId) {
+        return loader.emojis(weekId);
     }
 
     /** A session together with its rebuilt engine state. */

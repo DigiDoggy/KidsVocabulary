@@ -38,6 +38,9 @@ public class Concept {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** One emoji that pictures the word, or {@code null}. */
+    private String emoji;
+
     protected Concept() {
     }
 
@@ -73,5 +76,13 @@ public class Concept {
 
     public Long getOwnerParentId() {
         return ownerParentId;
+    }
+
+    public String getEmoji() {
+        return emoji;
+    }
+
+    public void changeEmoji(String emoji) {
+        this.emoji = emoji;
     }
 }

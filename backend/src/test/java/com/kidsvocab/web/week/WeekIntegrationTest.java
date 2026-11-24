@@ -36,6 +36,10 @@ class WeekIntegrationTest extends IntegrationTest {
     private static final Instant WEDNESDAY = Instant.parse("2027-01-13T10:00:00Z");
     private static final String THIS_MONDAY = "2027-01-11";
     private static final String NEXT_MONDAY = "2027-01-18";
+    private static final String DOG = new String(Character.toChars(0x1F415));
+    private static final String POODLE = new String(Character.toChars(0x1F429));
+    private static final String SNOWFLAKE = new String(Character.toChars(0x2744)) + "\uFE0F";
+    private static final String SNOWMAN = new String(Character.toChars(0x26C4));
 
     @Autowired
     WeekService weekService;
@@ -94,6 +98,38 @@ class WeekIntegrationTest extends IntegrationTest {
         List<Long> concepts = new ArrayList<>();
         week.get("words").forEach(w -> concepts.add(w.get("conceptId").asLong()));
         assertThat(concepts).hasSize(5).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void wordsCarryAPictureThatTheParentCanChangeInADraft() throws Exception {
+        long weekId = idOf(createDraft(Map.of("wordCount", 3)));
+        JsonNode dog = read(addWord(weekId, "koer", "dog", List.of())).get("words").get(0);
+        assertThat(dog.get("emoji").asText()).as("seed dictionary picture").isEqualTo(DOG);
+
+        JsonNode own = read(call(post("/api/v1/weeks/" + weekId + "/words"), Map.of("source", "lumehelves",
+                "target", "snowflake", "extraAnswers", List.of(), "emoji", " " + SNOWFLAKE + " "))
+                .andExpect(status().isOk())).get("words").get(1);
+        assertThat(own.get("emoji").asText()).isEqualTo(SNOWFLAKE);
+        call(post("/api/v1/weeks/" + weekId + "/words"), Map.of("source", "kass", "target", "cat",
+                "extraAnswers", List.of(), "emoji", "cat")).andExpect(status().isBadRequest());
+
+        String emojiUrl = "/api/v1/weeks/" + weekId + "/words/" + dog.get("id").asLong() + "/emoji";
+        JsonNode week = read(call(put(emojiUrl), Map.of("emoji", POODLE)).andExpect(status().isOk()));
+        assertThat(week.get("words").get(0).get("emoji").asText()).isEqualTo(POODLE);
+        assertThat(jdbc.queryForObject("select emoji from concept where id = ?", String.class,
+                dog.get("conceptId").asLong())).as("the shared dictionary stays as it was").isEqualTo(DOG);
+        call(put(emojiUrl), Map.of("emoji", DOG + DOG)).andExpect(status().isBadRequest());
+        week = read(call(put(emojiUrl), Map.of("emoji", "")).andExpect(status().isOk()));
+        assertThat(week.get("words").get(0).get("emoji").isNull()).isTrue();
+
+        String ownUrl = "/api/v1/weeks/" + weekId + "/words/" + own.get("id").asLong() + "/emoji";
+        call(put(ownUrl), Map.of("emoji", SNOWMAN)).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select emoji from concept where id = ?", String.class,
+                own.get("conceptId").asLong())).as("the parent's own word remembers it").isEqualTo(SNOWMAN);
+
+        call(post("/api/v1/weeks/" + weekId + "/suggest"));
+        call(post("/api/v1/weeks/" + weekId + "/launch")).andExpect(status().isOk());
+        call(put(ownUrl), Map.of("emoji", SNOWFLAKE)).andExpect(status().isConflict());
     }
 
     @Test

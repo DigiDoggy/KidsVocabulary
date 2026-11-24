@@ -220,7 +220,13 @@
       "points": "Points",
       "outcome": "Result"
     },
-    "setFull": "The set is full"
+    "setFull": "The set is full",
+    "addEmoji": "Picture (optional)",
+    "emojiHint": "One emoji, e.g. from the emoji keyboard",
+    "emojiInvalid": "Enter a single emoji",
+    "changeEmoji": "Change the picture for \"{word}\"",
+    "emojiFor": "Picture for \"{word}\"",
+    "removeEmoji": "No picture"
   },
   "month": {
     "inProgress": "in progress",
@@ -324,7 +330,10 @@
     "counts": "These stars count towards the month.",
     "home": "Home",
     "trainingTitle": "Training",
-    "starsLabel": "Stars:"
+    "starsLabel": "Stars:",
+    "soundOff": "Turn sound off",
+    "soundOn": "Turn sound on",
+    "listen": "Listen"
   },
   "crash": {
     "title": "Something went wrong",

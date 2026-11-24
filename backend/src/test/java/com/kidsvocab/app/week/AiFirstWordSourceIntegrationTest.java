@@ -31,6 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** "Fill up" with an AI provider in front of the dictionary. The provider is a mock. */
 class AiFirstWordSourceIntegrationTest extends IntegrationTest {
 
+    private static final String UMBRELLA = new String(Character.toChars(0x2602)) + "\uFE0F";
+
     @MockitoBean
     WordSuggestionProvider provider;
     @Autowired
@@ -51,8 +53,8 @@ class AiFirstWordSourceIntegrationTest extends IntegrationTest {
     @Test
     void aiWordsAreValidatedStoredAndUsed() throws Exception {
         when(provider.suggest(any())).thenReturn(List.of(
-                new SuggestedWord("vihmavari", "umbrella", "home"),
-                new SuggestedWord("koer", "dog", "animals"),          // known seed pair: reused
+                new SuggestedWord("vihmavari", "umbrella", "home", "umbrella", UMBRELLA),
+                new SuggestedWord("koer", "dog", "animals", "dog", UMBRELLA),  // known seed pair: reused as it is
                 new SuggestedWord("kass", "kass", "animals"),         // translation equals the word
                 new SuggestedWord("tee", "road", "transport"),        // "tee" already means tea
                 new SuggestedWord("kaelkirjak", "giraffe", "animals")));
@@ -62,8 +64,12 @@ class AiFirstWordSourceIntegrationTest extends IntegrationTest {
         assertThat(texts(week, "source")).containsOnly("AI");
         assertThat(texts(week, "answer")).containsExactly("umbrella", "dog", "giraffe");
         long umbrella = week.get("words").get(0).get("conceptId").asLong();
-        assertThat(jdbc.queryForMap("select origin, owner_parent_id, topic from concept where id = ?", umbrella))
-                .containsEntry("origin", "AI").containsEntry("owner_parent_id", null).containsEntry("topic", "home");
+        assertThat(jdbc.queryForMap("select origin, owner_parent_id, topic, emoji from concept where id = ?", umbrella))
+                .containsEntry("origin", "AI").containsEntry("owner_parent_id", null).containsEntry("topic", "home")
+                .containsEntry("emoji", UMBRELLA);
+        assertThat(week.get("words").get(0).get("emoji").asText()).isEqualTo(UMBRELLA);
+        assertThat(week.get("words").get(1).get("emoji").asText()).as("seed picture kept")
+                .isEqualTo(new String(Character.toChars(0x1F415)));
         long seedDog = jdbc.queryForObject("select f.concept_id from word_form f join concept c on c.id = f.concept_id "
                 + "where c.origin = 'SEED' and f.lang = 'en' and f.normalized = 'dog'", Long.class);
         assertThat(week.get("words").get(1).get("conceptId").asLong()).isEqualTo(seedDog);

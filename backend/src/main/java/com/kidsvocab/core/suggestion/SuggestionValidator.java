@@ -1,6 +1,7 @@
 package com.kidsvocab.core.suggestion;
 
 import com.kidsvocab.core.text.AnswerNormalizer;
+import com.kidsvocab.core.text.Emoji;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,7 +23,8 @@ import java.util.function.IntPredicate;
  *   <li>no stop-listed words (anything unsuitable for children);</li>
  *   <li>no duplicates within the response and nothing from the exclusion lists.</li>
  * </ul>
- * Topics outside the whitelist are dropped (set to {@code null}) rather than rejecting the word.
+ * Topics outside the whitelist are dropped (set to {@code null}) rather than rejecting the word; so is an
+ * emoji that is not exactly one emoji.
  */
 public final class SuggestionValidator {
 
@@ -85,7 +87,8 @@ public final class SuggestionValidator {
             }
             String english = word.english() == null ? null : AnswerNormalizer.normalize(word.english(), Locale.ENGLISH);
             valid.add(new ValidatedWord(word.source().strip(), word.target().strip(), source, target,
-                    topicOf(word.topic()), english == null || english.isEmpty() ? null : english));
+                    topicOf(word.topic()), english == null || english.isEmpty() ? null : english,
+                    Emoji.clean(word.emoji())));
         }
         return valid;
     }

@@ -10,6 +10,7 @@ import {
   listTopics,
   removeWord,
   replaceWord,
+  setWordEmoji,
   unscheduleWeek,
   updateWeek,
   weekStats,
@@ -18,6 +19,7 @@ import type { Child, Week, WordView } from '../../api/types';
 import { Card, ErrorMessage, Field, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { weekStarts } from '../../lib/dates';
+import { isSingleEmoji } from '../../lib/emoji';
 import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { useParentContext } from './ParentLayout';
@@ -127,6 +129,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
         <ul className="words">
           {week.words.map((w) => (
             <li key={w.id} className="word">
+              <WordEmojiEditor week={week} word={w} disabled={busy} onChange={onChange} />
               <div className="word__text">
                 <span className="word__prompt">{w.prompt}</span>
                 <span className="word__arrow" aria-hidden="true">
@@ -282,7 +285,9 @@ function AddWordCard({
   const [source, setSource] = useState('');
   const [target, setTarget] = useState('');
   const [extra, setExtra] = useState('');
+  const [emoji, setEmoji] = useState('');
   const [run, busy, error] = useAction();
+  const emojiOk = emoji.trim() === '' || isSingleEmoji(emoji);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -290,12 +295,13 @@ function AddWordCard({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    const next = await run(() => addWord(week.id, source.trim(), target.trim(), extraAnswers));
+    const next = await run(() => addWord(week.id, source.trim(), target.trim(), extraAnswers, emoji.trim()));
     if (next) {
       onAdded(next);
       setSource('');
       setTarget('');
       setExtra('');
+      setEmoji('');
     }
   }
 
@@ -318,12 +324,97 @@ function AddWordCard({
         <Field label={t('week.addExtra')} hint={t('week.addExtraHint')}>
           <input lang={child.targetLang} autoCapitalize="none" value={extra} onChange={(e) => setExtra(e.target.value)} />
         </Field>
+        <Field
+          label={t('week.addEmoji')}
+          hint={t('week.emojiHint')}
+          error={emojiOk ? undefined : t('week.emojiInvalid')}
+        >
+          <input className="emoji-input" maxLength={16} value={emoji} onChange={(e) => setEmoji(e.target.value)} />
+        </Field>
         <ErrorMessage error={error} />
-        <button className="btn btn--primary" disabled={disabled || busy}>
+        <button className="btn btn--primary" disabled={disabled || busy || !emojiOk}>
           {t('week.addButton')}
         </button>
       </form>
     </Card>
+  );
+}
+
+/** The word's picture in a draft: a button that opens a small field to change or remove it. */
+function WordEmojiEditor({
+  week,
+  word,
+  disabled,
+  onChange,
+}: {
+  week: Week;
+  word: WordView;
+  disabled: boolean;
+  onChange: (w: Week) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(word.emoji ?? '');
+  const [run, busy, error] = useAction();
+  const valid = value.trim() === '' || isSingleEmoji(value);
+
+  async function save(next: string) {
+    const week2 = await run(() => setWordEmoji(week.id, word.id, next.trim()));
+    if (week2) {
+      onChange(week2);
+      setOpen(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className={`word__emoji word__emoji--button${word.emoji ? '' : ' is-empty'}`}
+        disabled={disabled}
+        aria-label={t('week.changeEmoji', { word: word.prompt })}
+        title={t('week.changeEmoji', { word: word.prompt })}
+        onClick={() => {
+          setValue(word.emoji ?? '');
+          setOpen(true);
+        }}
+      >
+        {word.emoji ?? '+'}
+      </button>
+    );
+  }
+  return (
+    <form
+      className="emoji-editor"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (valid) save(value);
+      }}
+    >
+      <input
+        className="emoji-input"
+        autoFocus
+        maxLength={16}
+        aria-label={t('week.emojiFor', { word: word.prompt })}
+        aria-invalid={!valid}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+      />
+      <button className="btn btn--small btn--primary" disabled={busy || !valid}>
+        {t('common.save')}
+      </button>
+      {word.emoji && (
+        <button type="button" className="btn btn--small btn--danger-ghost" disabled={busy} onClick={() => save('')}>
+          {t('week.removeEmoji')}
+        </button>
+      )}
+      <button type="button" className="btn btn--small btn--ghost" disabled={busy} onClick={() => setOpen(false)}>
+        {t('common.cancel')}
+      </button>
+      {!valid && <span className="field__error">{t('week.emojiInvalid')}</span>}
+      <ErrorMessage error={error} />
+    </form>
   );
 }
 
@@ -459,6 +550,9 @@ function WordTable({ week }: { week: Week }) {
       <ul className="words">
         {week.words.map((w) => (
           <li key={w.id} className="word">
+            <span className="word__emoji" aria-hidden="true">
+              {w.emoji ?? ''}
+            </span>
             <div className="word__text">
               <span className="word__prompt">{w.prompt}</span>
               <span className="word__arrow" aria-hidden="true">
