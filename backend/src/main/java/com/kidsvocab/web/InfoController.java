@@ -1,5 +1,6 @@
 package com.kidsvocab.web;
 
+import com.kidsvocab.app.auth.DevMode;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Service endpoint: application version and supported languages.
+ * Service endpoint: application version, supported languages and whether dev mode is on.
  * Used by the frontend to show that the backend and the database are reachable.
  */
 @RestController
@@ -19,10 +20,12 @@ public class InfoController {
 
     private final JdbcTemplate jdbc;
     private final ObjectProvider<BuildProperties> buildProperties;
+    private final DevMode devMode;
 
-    public InfoController(JdbcTemplate jdbc, ObjectProvider<BuildProperties> buildProperties) {
+    public InfoController(JdbcTemplate jdbc, ObjectProvider<BuildProperties> buildProperties, DevMode devMode) {
         this.jdbc = jdbc;
         this.buildProperties = buildProperties;
+        this.devMode = devMode;
     }
 
     @GetMapping
@@ -32,10 +35,11 @@ public class InfoController {
                 (rs, i) -> new LanguageDto(rs.getString("code"), rs.getString("name")));
         BuildProperties build = buildProperties.getIfAvailable();
         String version = build != null ? build.getVersion() : "dev";
-        return new InfoResponse("KidsVocabulary", version, languages);
+        return new InfoResponse("KidsVocabulary", version, languages, devMode.enabled());
     }
 
-    public record InfoResponse(String name, String version, List<LanguageDto> languages) {
+    /** @param devMode the app signs in without a password (local development only) */
+    public record InfoResponse(String name, String version, List<LanguageDto> languages, boolean devMode) {
     }
 
     public record LanguageDto(String code, String name) {

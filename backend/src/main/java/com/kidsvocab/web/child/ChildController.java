@@ -3,6 +3,7 @@ package com.kidsvocab.web.child;
 import com.kidsvocab.app.child.ChildService;
 import com.kidsvocab.app.child.ChildService.ChildData;
 import com.kidsvocab.domain.child.Child;
+import com.kidsvocab.domain.child.Gender;
 import com.kidsvocab.domain.child.Level;
 import com.kidsvocab.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -41,21 +42,22 @@ public class ChildController {
             @NotBlank @Size(max = 50) String name,
             @Past LocalDate birthDate,
             @NotNull Level level,
+            Gender gender,
             @NotBlank @Size(max = 5) String nativeLang,
             @NotBlank @Size(max = 5) String targetLang,
             @Min(1) @Max(50) Integer defaultWeekSize) {
 
         ChildData toData() {
-            return new ChildData(name, birthDate, level, nativeLang, targetLang, defaultWeekSize);
+            return new ChildData(name, birthDate, level, gender, nativeLang, targetLang, defaultWeekSize);
         }
     }
 
-    public record ChildResponse(long id, String name, LocalDate birthDate, Level level, String nativeLang,
-                                String targetLang, int defaultWeekSize) {
+    public record ChildResponse(long id, String name, LocalDate birthDate, Level level, Gender gender,
+                                String nativeLang, String targetLang, int defaultWeekSize) {
 
         static ChildResponse of(Child c) {
-            return new ChildResponse(c.getId(), c.getName(), c.getBirthDate(), c.getLevel(), c.getNativeLang(),
-                    c.getTargetLang(), c.getDefaultWeekSize());
+            return new ChildResponse(c.getId(), c.getName(), c.getBirthDate(), c.getLevel(), c.getGender(),
+                    c.getNativeLang(), c.getTargetLang(), c.getDefaultWeekSize());
         }
     }
 

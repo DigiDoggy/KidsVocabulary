@@ -39,17 +39,24 @@ function lookup(catalog: Messages, key: string): string | undefined {
   return typeof node === 'string' ? node : undefined;
 }
 
-export function translate(lang: UiLanguage, key: string, params?: Params): string {
+/**
+ * @param variant a grammatical variant tried first, e.g. `girl` picks `key_girl` (or `key_girl_one`) when the
+ *                catalog has it; Russian needs it for verbs in the past tense ("ty nachal" / "ty nachala")
+ */
+export function translate(lang: UiLanguage, key: string, params?: Params, variant?: string): string {
   const count = params?.count;
+  const keys = variant ? [`${key}_${variant}`, key] : [key];
   let template: string | undefined;
-  for (const l of [lang, FALLBACK]) {
-    if (typeof count === 'number') {
-      const form = new Intl.PluralRules(l).select(count);
-      template = lookup(CATALOGS[l], `${key}_${form}`) ?? lookup(CATALOGS[l], `${key}_other`);
-    }
-    template ??= lookup(CATALOGS[l], key);
-    if (template !== undefined) {
-      break;
+  search: for (const l of [lang, FALLBACK]) {
+    for (const k of keys) {
+      if (typeof count === 'number') {
+        const form = new Intl.PluralRules(l).select(count);
+        template = lookup(CATALOGS[l], `${k}_${form}`) ?? lookup(CATALOGS[l], `${k}_other`);
+      }
+      template ??= lookup(CATALOGS[l], k);
+      if (template !== undefined) {
+        break search;
+      }
     }
   }
   if (template === undefined) {
@@ -80,15 +87,18 @@ const I18nContext = createContext<I18n | null>(null);
 /**
  * @param fixedLang a language that cannot be changed and is not remembered (the child area uses the
  *                  child's native language)
+ * @param gender    the person the texts talk to (the child area), for grammatical gender
  */
 export function I18nProvider({
   children,
   initialLang,
   fixedLang,
+  gender,
 }: {
   children: ReactNode;
   initialLang?: UiLanguage;
   fixedLang?: UiLanguage;
+  gender?: 'BOY' | 'GIRL' | null;
 }) {
   const [chosen, setLangState] = useState<UiLanguage>(() => initialLang ?? readStoredLang() ?? DEFAULT_LANG);
   const lang = fixedLang ?? chosen;
@@ -116,13 +126,13 @@ export function I18nProvider({
     return {
       lang,
       setLang,
-      t: (key, params) => translate(lang, key, params),
+      t: (key, params) => translate(lang, key, params, gender?.toLowerCase()),
       has: (key) => lookup(CATALOGS[lang], key) !== undefined || lookup(CATALOGS[FALLBACK], key) !== undefined,
       formatDate: (isoDate, options = { day: 'numeric', month: 'short' }) =>
         new Intl.DateTimeFormat(locale, options).format(parseIsoDate(isoDate)),
       formatNumber: (value) => (value === null || value === undefined ? '—' : numbers.format(value)),
     };
-  }, [lang, setLang]);
+  }, [lang, setLang, gender]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

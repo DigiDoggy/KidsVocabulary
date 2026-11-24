@@ -180,6 +180,50 @@ public class DictionaryQueries {
                 """, new MapSqlParameterSource("month", monthId), Long.class));
     }
 
+    // --- game distractors -------------------------------------------------------------------------
+
+    /** Primary target words of the concepts the child has learned, in random order. */
+    public List<String> learnedAnswers(long childId, String targetLang, int limit) {
+        return jdbc.queryForList("""
+                select t.text from child_word cw
+                join word_form t on t.concept_id = cw.concept_id and t.lang = :target and t.is_primary
+                where cw.child_id = :child and cw.status = 'LEARNED'
+                order by random()
+                limit :limit
+                """, new MapSqlParameterSource().addValue("child", childId).addValue("target", targetLang)
+                .addValue("limit", limit), String.class);
+    }
+
+    /** For each given concept: primary target words of the other shared concepts of its topic. */
+    public Map<Long, List<String>> sameTopicAnswers(Collection<Long> conceptIds, String targetLang) {
+        Map<Long, List<String>> result = new java.util.HashMap<>();
+        if (conceptIds.isEmpty()) {
+            return result;
+        }
+        jdbc.query("""
+                select src.id as concept_id, t.text
+                from concept src
+                join concept c on c.topic = src.topic and c.id <> src.id and c.owner_parent_id is null
+                join word_form t on t.concept_id = c.id and t.lang = :target and t.is_primary
+                where src.id in (:ids)
+                """, new MapSqlParameterSource().addValue("ids", conceptIds).addValue("target", targetLang),
+                rs -> {
+                    result.computeIfAbsent(rs.getLong("concept_id"), k -> new ArrayList<>()).add(rs.getString("text"));
+                });
+        return result;
+    }
+
+    /** Random primary target words of the shared dictionary. */
+    public List<String> randomAnswers(String targetLang, int limit) {
+        return jdbc.queryForList("""
+                select t.text from word_form t join concept c on c.id = t.concept_id
+                where c.owner_parent_id is null and t.lang = :target and t.is_primary
+                order by random()
+                limit :limit
+                """, new MapSqlParameterSource().addValue("target", targetLang).addValue("limit", limit),
+                String.class);
+    }
+
     private static <T> List<T> orSentinel(Collection<T> values, T sentinel) {
         List<T> list = new ArrayList<>(values);
         if (list.isEmpty()) {

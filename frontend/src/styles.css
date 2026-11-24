@@ -1693,3 +1693,356 @@ h1,
   font-size: 1.3rem;
   text-align: center;
 }
+
+/* --- game modes (unscored) --- */
+
+.games {
+  align-items: stretch;
+}
+
+.games__title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.games__note {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.games__subtitle {
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.games__modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.kid .games__mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 96px;
+  padding: 12px;
+  border-radius: 18px;
+  text-decoration: none;
+}
+
+.games__icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.games__tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kid .games__task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  text-decoration: none;
+}
+
+.games__count {
+  margin-left: auto;
+  color: var(--kid-muted);
+  font-size: 0.95rem;
+}
+
+.game__hint {
+  margin: 0;
+}
+
+.game__stage {
+  position: relative;
+}
+
+/* beside the word, not up among the progress dots */
+.game__stage:not(.search__stage) .reaction {
+  bottom: -25%;
+}
+
+.game__end-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* choose from 4: a 2x2 grid of big answer buttons */
+.choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.kid .choice__option {
+  font-family: var(--kid-word-font);
+  font-size: clamp(1.3rem, 4.5vw, 1.8rem);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.kid .choice__option.is-right {
+  background: var(--kid-ok-bg);
+  color: var(--kid-ok);
+  box-shadow: 0 var(--kid-press) 0 color-mix(in srgb, var(--kid-ok) 35%, var(--kid-ok-bg));
+  animation: pop 0.3s ease-out;
+}
+
+.kid .choice__option.is-wrong {
+  background: var(--kid-almost-bg);
+  color: var(--kid-almost);
+  opacity: 1;
+  text-decoration: line-through;
+  animation: shake 0.4s ease-in-out;
+}
+
+/* scrambled letters: the slots fill up as the child taps the tiles */
+.scramble__slots.is-solved .letters__box {
+  border-color: var(--kid-go);
+  background: var(--kid-ok-bg);
+  color: var(--kid-ok);
+}
+
+.scramble__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.scramble__tile {
+  display: grid;
+  place-items: center;
+  width: clamp(52px, 11vw, 64px);
+  height: clamp(52px, 11vw, 64px);
+  border: 0;
+  border-radius: 14px;
+  background: var(--kid-surface);
+  box-shadow: 0 var(--kid-press) 0 var(--kid-lift);
+  color: var(--kid-ink);
+  font-family: var(--kid-word-font);
+  font-size: clamp(1.6rem, 6vw, 2.2rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scramble__tile:not(:disabled):active {
+  transform: translateY(calc(var(--kid-press) - 1px));
+  box-shadow: 0 1px 0 var(--kid-lift);
+}
+
+.scramble__tile:disabled {
+  visibility: hidden;
+}
+
+/* a placed letter can be tapped to take it back */
+.scramble__placed {
+  padding: 0;
+  cursor: pointer;
+}
+
+.scramble__placed:disabled {
+  cursor: default;
+}
+
+.scramble__slots.is-wrong .letters__box {
+  border-color: var(--kid-almost);
+  background: var(--kid-almost-bg);
+  color: var(--kid-almost);
+}
+
+.scramble__slots.is-wrong {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* word search: a square grid of letters, swiped over with a finger */
+.search__words {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search__words li {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--kid-surface);
+  box-shadow: 0 3px 0 var(--kid-line);
+  font-family: var(--kid-word-font);
+}
+
+.search__words li.is-found {
+  background: var(--found-bg);
+  color: var(--found-fg);
+}
+
+.search__words li.is-found > span:first-child {
+  text-decoration: line-through;
+}
+
+.search__answer {
+  font-weight: 800;
+}
+
+.search__tools {
+  display: flex;
+  justify-content: center;
+}
+
+.kid .search__hint.is-active {
+  background: var(--kid-star);
+  color: var(--kid-ink);
+  box-shadow: 0 var(--kid-press) 0 var(--kid-star-text);
+}
+
+.search__letters {
+  color: var(--kid-muted);
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+/* while choosing a word for a hint, the words become buttons */
+.search__words.is-choosing li:has(.search__pick) {
+  outline: 3px dashed var(--kid-star);
+  outline-offset: 2px;
+}
+
+.search__pick {
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.search__words.is-choosing li:has(.search__pick) {
+  padding: 0;
+}
+
+/* a hint points at the first letter or the whole word */
+.search__cell.is-hinted {
+  box-shadow: inset 0 0 0 4px var(--kid-star);
+  animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  50% {
+    box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--kid-star) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search__cell.is-hinted {
+    animation: none;
+  }
+}
+
+.search__stage {
+  width: 100%;
+  max-width: min(560px, 70vh);
+}
+
+.search__stage .reaction {
+  left: 50%;
+  bottom: 40%;
+}
+
+.search__grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.search__cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--kid-surface);
+  color: var(--kid-ink);
+  font-family: var(--kid-word-font);
+  font-size: clamp(1rem, 4.2vw, 1.7rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search__cell.is-found {
+  background: var(--found-bg);
+  color: var(--found-fg);
+}
+
+.search__cell.is-selected {
+  background: var(--kid-star);
+  color: var(--kid-ink);
+  transform: scale(1.06);
+}
+
+.search__cell:focus-visible {
+  outline: 3px solid var(--kid-star-text);
+  outline-offset: 1px;
+}
+
+/* found words get colours of their own; dark text on light fills for contrast */
+.colour-0 { --found-bg: #c8efc0; --found-fg: #1d5222; }
+.colour-1 { --found-bg: #cfe3ff; --found-fg: #1b3f73; }
+.colour-2 { --found-bg: #ffd6e5; --found-fg: #74203f; }
+.colour-3 { --found-bg: #fff0a8; --found-fg: #5a4600; }
+.colour-4 { --found-bg: #e3d6ff; --found-fg: #43287a; }
+.colour-5 { --found-bg: #ffdcc2; --found-fg: #6e3410; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kid .choice__option.is-right,
+  .kid .choice__option.is-wrong,
+  .scramble__slots.is-wrong {
+    animation: none;
+  }
+
+  .search__cell.is-selected {
+    transform: none;
+  }
+}
+
+/* --- dev mode (local development only) --- */
+
+.dev-login {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dev-login p {
+  margin: 0;
+}

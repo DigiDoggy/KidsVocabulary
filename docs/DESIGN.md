@@ -138,6 +138,7 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 | POST | `/auth/logout` | revoke the refresh token |
 | POST | `/auth/switch-to-child/{childId}` | (PARENT) → `CHILD` token |
 | POST | `/auth/switch-to-parent` | `{pin}` → `PARENT` token; rate-limited |
+| POST | `/auth/dev-login` | dev mode only (`DEV_MODE=true`, local development): tokens of the `admin` account without a password; `404` otherwise |
 | GET | `/account/me` | e-mail, time zone, current mode and child |
 | PUT | `/account/pin` | (PARENT) `{currentPassword, newPin}` change the PIN |
 
@@ -146,7 +147,7 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 | Method | Path | Description |
 |---|---|---|
 | GET/POST | `/children` | list / create a child |
-| GET/PUT/DELETE | `/children/{id}` | profile (DELETE = archive) |
+| GET/PUT/DELETE | `/children/{id}` | profile (DELETE = archive); optional `gender` `BOY`/`GIRL` for the grammar of the child's texts (V9) |
 | GET | `/children/{id}/weeks` | weeks, newest first |
 | POST | `/children/{id}/weeks` | `{startDate?, wordCount?}` → draft for this or next Monday (default: this week if it has no set); carried-over words are added immediately |
 | GET | `/weeks/{weekId}` | set + status + per-word results once closed |
@@ -166,6 +167,12 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 | GET | `/months/{monthId}/report` | final report (after closing): totals, result, reward if earned, weekly stats, hard and unlearned words with texts |
 | GET | `/weeks/{weekId}/stats` | per word: wrong rounds, solved round, hint, problematic, points, outcome |
 | GET | `/dictionary/topics` | topics for suggestions |
+| GET/POST | `/children/{id}/game-tasks` | game tasks of the child, newest first / `{mode}` → new draft task (§5.1, milestone 10) |
+| GET/DELETE | `/game-tasks/{taskId}` | task with its words (`minWords`, `maxWords`) / delete (also a given one) |
+| POST | `/game-tasks/{taskId}/words` | `{source, target}` add a word (DRAFT only; word search: 2–10 letters) |
+| DELETE | `/game-tasks/{taskId}/words/{wordId}` | remove a word (DRAFT only) |
+| POST | `/game-tasks/{taskId}/suggest` | `{topic?, count?}` add suggested words (AI → dictionary), at most up to `maxWords` |
+| POST | `/game-tasks/{taskId}/give` | at least 3 words; DRAFT → GIVEN, a word search gets its grid now |
 
 **Week planning rules** (implemented in `WeekService` / `WeekLifecycleService`):
 
@@ -192,6 +199,18 @@ Access tokens are HS256-signed JWTs (`JWT_SECRET`, at least 32 bytes). Refresh t
 - Sessions are stored as an append-only event log (`training_event`: answers and hints). The engine is deterministic for a stored seed, so replaying the events restores the exact state, including revealed hint letters. A unique `(session, seq)` stops two tabs from writing at once.
 - Finishing the first pass closes the week immediately (`COMPLETED`); after week 4 the month report is built at once.
 - The response never contains the answer of the current word or its length, only its hint mask once a hint was taken.
+
+**Games (CHILD only, unscored, milestone 10):**
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/me/games` | `{week: {id, wordCount} \| null, tasks: [{id, mode, wordCount}]}`: this calendar week's set (running or closed) and the given tasks |
+| GET | `/me/games/week/{mode}` | this week's words in `CHOICE`, `SCRAMBLE` or `WORD_SEARCH`; `409` without a set this week |
+| GET | `/me/games/tasks/{taskId}` | a given task in its mode |
+| POST | `/me/games/tasks/{taskId}/played` | the child finished the task once more (`timesPlayed` for the parent) |
+
+A game is `{mode, taskId, words: [{id, prompt, answer, options}], grid: {size, rows} | null}`. Games are checked
+on the client (nothing is scored, so the answers may be sent); they never touch points, outcomes or word history.
 
 ---
 
@@ -517,24 +536,43 @@ modes of milestone 10 do not use them.
 
 All game modes are **demo modes**: unscored, they never change week points, the monthly result or the
 word history. The goal is to build them, let the child play and see what works. Only the current typing
-mode scores points (§3.2).
+mode scores points (§3.2). Pictures and pronunciation stay in the typing mode; the games use the reactions
+of milestone 9 (and its sound switch) only.
 
-- **Mode menu (child).** The child home screen gets a menu: "Training" (the scored typing mode, as
-  today) and the game modes. A game mode started from the menu uses this week's words.
-- **Game tasks (parent).** The parent can give the child extra tasks: a game mode plus a word list. Words
-  are entered manually and/or filled by AI, the same way as in the week builder. Tasks appear in the
-  child's mode menu; they are unscored like every game mode.
-- **Choose from 4:** the prompt with four target-language words; distractors come from the same word
-  list, then from the child's learned words, then from the dictionary of the same topic.
-- **Scrambled letters:** the letters of the word as tiles; the child taps them in order. Wrong tap =
-  the tile shakes. Multi-word answers keep the space as a fixed tile.
-- **Word search grid (filword):** a square grid (6x6 to 10x10 depending on level and word length) with
-  the words hidden horizontally and vertically (diagonals for A2). The child sees the native prompts
-  and swipes over letters; a found word is highlighted and gets a reaction from milestone 9.
-  Word placement is deterministic from a seed (pure function in `core`, 100% coverage like the rest).
-  The free cells are filled by AI with letters of the target alphabet (so the grid looks like real
-  words, not random noise, and contains no extra accidental answers); without an AI provider or on an
-  AI error, random letters of the target alphabet are used.
+- **Mode menu (child).** The child home screen gets a "Play with words" card: the three modes with this
+  week's words (when there is a set this week, running or closed) and the tasks from the parent.
+  Finishing a game shows a "Well played!" screen with "Play again".
+- **Game tasks (parent).** The child page gets a "Game tasks" card: create a task for a mode, collect words
+  (typed in, or suggested by AI → dictionary with a topic and a count; already known words are fine here),
+  then give it to the child. 3 to 12 words, a word search at most 8 words of 2–10 letters. A given task is
+  frozen (texts are copied like week words) and can be deleted; the parent sees how often it was played.
+  Tables `game_task` and `game_task_word` (V8).
+- **Choose from 4:** the prompt with four target-language words (`core.game.Choices`); distractors come
+  from the same word list, then from the child's learned words, then from the word's dictionary topic,
+  then from anywhere in the dictionary. A wrong pick is crossed out with the finger and the trombone; the
+  child picks again.
+- **Scrambled letters:** the letters of the word as tiles (lower case); each tap puts a tile into the next
+  empty letter box, a tap on a filled box takes the letter back. The word is checked only when every box is
+  filled: right → reaction and the next word; wrong → the boxes turn red with the finger and the trombone,
+  and after a moment all letters go back to the tiles. Spaces, hyphens and apostrophes are fixed.
+- **Word search grid (filword):** `core.game.WordSearch` places the words, longest first, at random
+  positions from a seed: left to right and top to bottom, plus diagonally down-right for level A2. The grid
+  is square, 6x6 to 10x10: big enough for the longest word and about twice as many cells as letters.
+  Letters only (spaces and hyphens dropped), lower case; shown in capitals except ß. The free cells are
+  filled with letters from the AI provider (`WordSuggestionProvider.fillerLetters`, so the grid looks like
+  the language); without a provider, after an error or during the provider's cool-down, random letters of
+  the target alphabet are used. Afterwards no hidden word can be read anywhere else (forwards or
+  backwards). The child sees the native prompts and picks letters one by one (selected letters light up) or
+  swipes over them; a tap further along the line fills the letters in between, tapping the last letter
+  again takes it back, a tap off the line starts a new selection. Any straight line counts, in either
+  direction. A word is found as soon as the selection spells it: it gets its colour and a reaction. A
+  selection that is not a word and gets no new letter for 2 seconds is a miss: the finger wags (no sound)
+  and the selection is cleared.
+  Hints: the child presses "Hint", then taps a word in the list. Each hint for a word goes one step
+  further: 1 — the number of letters next to the word, 2 — its first letter blinks in the grid, 3 — the
+  whole word is outlined (the child still picks it to find it). The grid is searched on the client.
+  A week's grid takes up to 8 random words of the week and is built once, on first opening
+  (`week_word_search`); a task's grid is built when the task is given.
 
 #### Milestone 11 — word garden
 

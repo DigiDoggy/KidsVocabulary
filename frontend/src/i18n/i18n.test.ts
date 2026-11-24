@@ -7,7 +7,9 @@ type Tree = { [key: string]: string | Tree };
 
 function keys(tree: Tree, prefix = ''): string[] {
   return Object.entries(tree).flatMap(([k, v]) =>
-    typeof v === 'string' ? [prefix + k.replace(/_(zero|one|two|few|many|other)$/, '')] : keys(v, `${prefix}${k}.`),
+    typeof v === 'string'
+      ? [prefix + k.replace(/_(zero|one|two|few|many|other)$/, '').replace(/_(boy|girl)$/, '')]
+      : keys(v, `${prefix}${k}.`),
   );
 }
 
@@ -22,6 +24,17 @@ describe('translate', () => {
     // Russian has one/few/many forms; the forms differ, so the results must differ too
     const forms = [1, 2, 5].map((n) => translate('ru', 'week.wordsCount', { count: n }));
     expect(new Set(forms).size).toBe(3);
+  });
+
+  it('picks the variant for the grammatical gender when there is one', () => {
+    const boy = translate('ru', 'kid.weekInProgress', { count: 5 });
+    const girl = translate('ru', 'kid.weekInProgress', { count: 5 }, 'girl');
+    expect(girl).not.toBe(boy);
+    expect(girl).toContain('5');
+    expect(translate('ru', 'kid.youWrote', undefined, 'girl')).not.toBe(translate('ru', 'kid.youWrote'));
+    // no variant in the catalog: the plain text
+    expect(translate('ru', 'kid.home', undefined, 'girl')).toBe(translate('ru', 'kid.home'));
+    expect(translate('en', 'kid.youWrote', undefined, 'girl')).toBe('You wrote:');
   });
 
   it('falls back to English and then to the key', () => {

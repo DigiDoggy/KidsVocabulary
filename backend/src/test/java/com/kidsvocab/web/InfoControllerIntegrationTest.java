@@ -4,6 +4,7 @@ import com.kidsvocab.IntegrationTest;
 import org.junit.jupiter.api.Test;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,7 +17,13 @@ class InfoControllerIntegrationTest extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("KidsVocabulary"))
                 .andExpect(jsonPath("$.languages.length()").value(4))
-                .andExpect(jsonPath("$.languages[0].code").value("de"));
+                .andExpect(jsonPath("$.languages[0].code").value("de"))
+                .andExpect(jsonPath("$.devMode").value(false));
+    }
+
+    @Test
+    void devSignInDoesNotExistByDefault() throws Exception {
+        mvc.perform(post("/api/v1/auth/dev-login")).andExpect(status().isNotFound());
     }
 
     @Test

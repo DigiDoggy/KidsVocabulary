@@ -83,6 +83,14 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm install && npm run dev     # http://localhost:5173, /api is proxied to :8080
 ```
 
+### Dev mode
+
+For local work without signing in every time, set `DEV_MODE=true` in `.env` (or the environment of the
+backend). On start the backend creates the account `admin` / `123456` with the parent PIN `1234`, and the
+frontend signs in to it automatically; after signing out, the login page has a button for it. Everything
+else works as usual, including the PIN that guards parent mode. **Never enable dev mode on a server that
+others can reach.**
+
 ## Tests
 
 ```bash

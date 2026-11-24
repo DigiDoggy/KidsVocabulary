@@ -33,6 +33,8 @@ management:
         enabled: true
 
 app:
+  # Local development only: signs in as a fixed account without a password (see DevMode). Never in production.
+  dev-mode: ${DEV_MODE:false}
   training:
     show-correct-answer-seconds: 5
   scheduling:

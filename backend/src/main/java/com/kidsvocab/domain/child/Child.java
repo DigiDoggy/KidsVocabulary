@@ -33,6 +33,10 @@ public class Child {
     @Column(nullable = false)
     private Level level;
 
+    /** Optional; {@code null} if the parent did not say. */
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
     @Column(name = "native_lang", nullable = false)
     private String nativeLang;
 
@@ -59,14 +63,19 @@ public class Child {
         this.createdAt = createdAt;
     }
 
-    public void update(String name, LocalDate birthDate, Level level, String nativeLang, String targetLang,
-                       int defaultWeekSize) {
+    public void update(String name, LocalDate birthDate, Level level, Gender gender, String nativeLang,
+                       String targetLang, int defaultWeekSize) {
         this.name = name;
         this.birthDate = birthDate;
         this.level = level;
+        this.gender = gender;
         this.nativeLang = nativeLang;
         this.targetLang = targetLang;
         this.defaultWeekSize = defaultWeekSize;
+    }
+
+    public Gender getGender() {
+        return gender;
     }
 
     public void archive() {

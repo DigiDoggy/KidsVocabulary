@@ -1,6 +1,7 @@
 package com.kidsvocab.web.auth;
 
 import com.kidsvocab.app.auth.AuthService;
+import com.kidsvocab.app.auth.DevMode;
 import com.kidsvocab.app.auth.IssuedTokens;
 import com.kidsvocab.security.CurrentUser;
 import com.kidsvocab.web.auth.AuthDtos.LoginRequest;
@@ -24,10 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService auth;
+    private final DevMode devMode;
     private final RefreshCookie refreshCookie;
 
-    public AuthController(AuthService auth, RefreshCookie refreshCookie) {
+    public AuthController(AuthService auth, DevMode devMode, RefreshCookie refreshCookie) {
         this.auth = auth;
+        this.devMode = devMode;
         this.refreshCookie = refreshCookie;
     }
 
@@ -40,6 +43,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         return respond(HttpStatus.OK, auth.login(request.email(), request.password()));
+    }
+
+    /** Local development only ({@code DEV_MODE=true}); otherwise 404. */
+    @PostMapping("/dev-login")
+    public ResponseEntity<TokenResponse> devLogin() {
+        return respond(HttpStatus.OK, devMode.signIn());
     }
 
     @PostMapping("/refresh")

@@ -31,7 +31,7 @@ export function ChildLayout() {
     return <main className="kid">{home.error ? <ErrorMessage error={home.error} onRetry={home.reload} /> : <Spinner />}</main>;
   }
   return (
-    <I18nProvider fixedLang={childLanguage(home.data.child.nativeLang)}>
+    <I18nProvider fixedLang={childLanguage(home.data.child.nativeLang)} gender={home.data.child.gender}>
       <ChildShell home={home.data} reloadHome={home.reload} />
     </I18nProvider>
   );

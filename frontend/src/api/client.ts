@@ -4,6 +4,11 @@ import type {
   AppInfo,
   Child,
   ChildData,
+  Game,
+  GameMenu,
+  GameMode,
+  GameTask,
+  GameTaskSummary,
   Home,
   Me,
   MonthProgress,
@@ -41,6 +46,11 @@ export async function register(email: string, password: string, pin: string, tim
       auth: false,
     }),
   );
+}
+
+/** Local development only (the server's dev mode): signs in to the dev account without a password. */
+export async function devLogin(): Promise<Session> {
+  return acceptTokens(await request<TokenResponse>('POST', '/auth/dev-login', { auth: false }));
 }
 
 export async function logout(): Promise<void> {
@@ -115,3 +125,23 @@ export const submitAnswer = (sessionId: number, weekWordId: number, round: numbe
   post<AnswerResponse>(`/sessions/${sessionId}/answers`, { weekWordId, round, answer });
 export const requestHint = (sessionId: number, weekWordId: number, round: number) =>
   post<HintResponse>(`/sessions/${sessionId}/hint`, { weekWordId, round });
+
+// --- games (unscored) ------------------------------------------------------------------------------
+
+export const gameMenu = () => get<GameMenu>('/me/games');
+export const weekGame = (mode: GameMode) => get<Game>(`/me/games/week/${mode}`);
+export const taskGame = (taskId: number) => get<Game>(`/me/games/tasks/${taskId}`);
+export const taskPlayed = (taskId: number) => post<void>(`/me/games/tasks/${taskId}/played`);
+
+export const listGameTasks = (childId: number) => get<GameTaskSummary[]>(`/children/${childId}/game-tasks`);
+export const createGameTask = (childId: number, mode: GameMode) =>
+  post<GameTask>(`/children/${childId}/game-tasks`, { mode });
+export const getGameTask = (taskId: number) => get<GameTask>(`/game-tasks/${taskId}`);
+export const deleteGameTask = (taskId: number) => del(`/game-tasks/${taskId}`);
+export const addTaskWord = (taskId: number, source: string, target: string) =>
+  post<GameTask>(`/game-tasks/${taskId}/words`, { source, target });
+export const removeTaskWord = (taskId: number, wordId: number) =>
+  request<GameTask>('DELETE', `/game-tasks/${taskId}/words/${wordId}`);
+export const fillGameTask = (taskId: number, topic?: string, count?: number) =>
+  post<GameTask>(`/game-tasks/${taskId}/suggest`, { topic: topic || null, count: count ?? null });
+export const giveGameTask = (taskId: number) => post<GameTask>(`/game-tasks/${taskId}/give`);

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { archiveChild, createChild, getChild, updateChild } from '../../api/client';
 import { ApiError } from '../../api/http';
-import type { Child, ChildData, Level } from '../../api/types';
+import type { Child, ChildData, Gender, Level } from '../../api/types';
 import { ErrorMessage, Field, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { usePageTitle } from '../../lib/a11y';
@@ -36,10 +36,11 @@ function ChildForm({ initial }: { initial: Child | null }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [data, setData] = useState<ChildData>(
-    initial ?? {
+    initial ? { ...initial, gender: initial.gender ?? null } : {
       name: '',
       birthDate: null,
       level: 'A0',
+      gender: null,
       nativeLang: 'ru',
       targetLang: 'en',
       defaultWeekSize: DEFAULT_WEEK_SIZE,
@@ -83,6 +84,13 @@ function ChildForm({ initial }: { initial: Child | null }) {
           value={data.birthDate ?? ''}
           onChange={(e) => set('birthDate', e.target.value || null)}
         />
+      </Field>
+      <Field label={t('childForm.gender')} hint={t('childForm.genderHint')}>
+        <select value={data.gender ?? ''} onChange={(e) => set('gender', (e.target.value || null) as Gender | null)}>
+          <option value="">{t('childForm.genderUnset')}</option>
+          <option value="BOY">{t('childForm.boy')}</option>
+          <option value="GIRL">{t('childForm.girl')}</option>
+        </select>
       </Field>
       <fieldset className="field">
         <legend className="field__label">{t('childForm.level')}</legend>

@@ -17,6 +17,8 @@ export interface AppInfo {
   name: string;
   version: string;
   languages: Language[];
+  /** local development: the app signs in without a password */
+  devMode: boolean;
 }
 
 export interface TokenResponse {
@@ -33,10 +35,14 @@ export interface Me {
   childId: number | null;
 }
 
+export type Gender = 'BOY' | 'GIRL';
+
 export interface ChildData {
   name: string;
   birthDate: string | null;
   level: Level;
+  /** optional, only for grammar in the child's texts */
+  gender: Gender | null;
   nativeLang: string;
   targetLang: string;
   defaultWeekSize: number;
@@ -111,7 +117,7 @@ export interface HomeMonth {
 }
 
 export interface Home {
-  child: { id: number; name: string; nativeLang: string; targetLang: string };
+  child: { id: number; name: string; gender: Gender | null; nativeLang: string; targetLang: string };
   week: HomeWeek | null;
   month: HomeMonth | null;
 }
@@ -235,4 +241,54 @@ export interface AnswerResponse {
 export interface HintResponse {
   hintMask: string;
   hintAvailable: boolean;
+}
+
+// --- games (unscored) ------------------------------------------------------------------------------
+
+export type GameMode = 'CHOICE' | 'SCRAMBLE' | 'WORD_SEARCH';
+export type GameTaskStatus = 'DRAFT' | 'GIVEN';
+
+export interface GameMenu {
+  /** this week's set, if there is one */
+  week: { id: number; wordCount: number } | null;
+  /** tasks given by the parent, newest first */
+  tasks: { id: number; mode: GameMode; wordCount: number }[];
+}
+
+export interface GameWord {
+  id: number;
+  prompt: string;
+  answer: string;
+  /** CHOICE only: four options (fewer if the dictionary is tiny), the answer among them */
+  options: string[] | null;
+}
+
+export interface Game {
+  mode: GameMode;
+  taskId: number | null;
+  /** for a word search only the words hidden in the grid */
+  words: GameWord[];
+  /** WORD_SEARCH only: size rows of size lower-case letters */
+  grid: { size: number; rows: string[] } | null;
+}
+
+export interface GameTaskSummary {
+  id: number;
+  mode: GameMode;
+  status: GameTaskStatus;
+  wordCount: number;
+  timesPlayed: number;
+  createdAt: string;
+  givenAt: string | null;
+}
+
+export interface GameTask {
+  id: number;
+  childId: number;
+  mode: GameMode;
+  status: GameTaskStatus;
+  timesPlayed: number;
+  minWords: number;
+  maxWords: number;
+  words: { id: number; conceptId: number; prompt: string; answer: string }[];
 }

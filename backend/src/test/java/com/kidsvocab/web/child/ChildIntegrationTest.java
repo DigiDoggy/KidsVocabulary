@@ -26,8 +26,10 @@ class ChildIntegrationTest extends IntegrationTest {
         Map<String, Object> request = new HashMap<>(childRequest("  Mia "));
         request.put("birthDate", "2018-05-04");
         request.put("defaultWeekSize", 12);
+        request.put("gender", "GIRL");
         long mia = readId(send(post("/api/v1/children"), parent, request)
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.gender").value("GIRL"))
                 .andExpect(jsonPath("$.name").value("Mia"))
                 .andExpect(jsonPath("$.birthDate").value("2018-05-04"))
                 .andExpect(jsonPath("$.defaultWeekSize").value(12)));
@@ -44,7 +46,11 @@ class ChildIntegrationTest extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nativeLang").value("et"))
                 .andExpect(jsonPath("$.level").value("A2"))
+                .andExpect(jsonPath("$.gender").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.defaultWeekSize").value(10));
+        Session miaSession = session(mvc.perform(withAuth(post("/api/v1/auth/switch-to-child/" + mia), parent)));
+        mvc.perform(withAuth(get("/api/v1/me/home"), miaSession))
+                .andExpect(jsonPath("$.child.gender").value("GIRL"));
 
         mvc.perform(withAuth(delete("/api/v1/children/" + mia), parent)).andExpect(status().isNoContent());
         mvc.perform(withAuth(get("/api/v1/children/" + mia), parent)).andExpect(status().isNotFound());

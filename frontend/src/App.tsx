@@ -6,9 +6,11 @@ import { Spinner } from './components/ui';
 import { LoginPage, RegisterPage } from './features/auth/AuthPages';
 import { ChildHome } from './features/child/ChildHome';
 import { ChildLayout } from './features/child/ChildLayout';
+import { GamePage } from './features/child/GamePage';
 import { TrainingPage } from './features/child/TrainingPage';
 import { ChildFormPage } from './features/parent/ChildFormPage';
 import { ChildPage } from './features/parent/ChildPage';
+import { GameTaskPage } from './features/parent/GameTaskPage';
 import { ChildrenPage } from './features/parent/ChildrenPage';
 import { MonthPage } from './features/parent/MonthPage';
 import { ParentLayout } from './features/parent/ParentLayout';
@@ -49,6 +51,8 @@ export function AppRoutes() {
       <Route path="/child" element={<Guard need="CHILD"><ChildLayout /></Guard>}>
         <Route index element={<ChildHome />} />
         <Route path="train" element={<TrainingPage />} />
+        <Route path="play/week/:mode" element={<GamePage key="week" source="week" />} />
+        <Route path="play/task/:taskId" element={<GamePage key="task" source="task" />} />
       </Route>
       <Route element={<Guard need="PARENT"><ParentLayout /></Guard>}>
         <Route index element={<ChildrenPage />} />
@@ -57,6 +61,7 @@ export function AppRoutes() {
         <Route path="children/:id/edit" element={<ChildFormPage />} />
         <Route path="weeks/:weekId" element={<WeekPage />} />
         <Route path="months/:monthId" element={<MonthPage />} />
+        <Route path="game-tasks/:taskId" element={<GameTaskPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="pick" element={<ProfilePicker />} />
       </Route>

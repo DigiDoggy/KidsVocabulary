@@ -1,5 +1,6 @@
 package com.kidsvocab.ai;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -9,8 +10,24 @@ final class SuggestionPrompt {
     /** Upper bound for the exclusion list, to keep the prompt small. */
     static final int MAX_EXCLUDED = 300;
 
-    private static final Map<String, String> LANGUAGE_NAMES = Map.of(
+    static final Map<String, String> LANGUAGE_NAMES = Map.of(
             "de", "German", "en", "English", "ru", "Russian", "et", "Estonian");
+
+    /** The answer's shape for APIs with structured output. */
+    static final Map<String, Object> SCHEMA = Map.of(
+            "type", "OBJECT",
+            "properties", Map.of("words", Map.of(
+                    "type", "ARRAY",
+                    "items", Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "source", Map.of("type", "STRING"),
+                                    "target", Map.of("type", "STRING"),
+                                    "topic", Map.of("type", "STRING"),
+                                    "english", Map.of("type", "STRING"),
+                                    "emoji", Map.of("type", "STRING")),
+                            "required", List.of("source", "target")))),
+            "required", List.of("words"));
 
     private SuggestionPrompt() {
     }
@@ -56,7 +73,7 @@ final class SuggestionPrompt {
         return sb.toString();
     }
 
-    private static String name(String lang) {
+    static String name(String lang) {
         return LANGUAGE_NAMES.getOrDefault(lang, lang);
     }
 }

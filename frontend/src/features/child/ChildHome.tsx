@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
+import { gameMenu } from '../../api/client';
 import type { HomeMonth, HomeWeek } from '../../api/types';
+import { ErrorMessage } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { usePageTitle } from '../../lib/a11y';
+import { useLoad } from '../../lib/useLoad';
 import { useChildContext } from './ChildLayout';
+import { GAME_MODES, MODE_ICONS } from './GamePage';
 import { Stars } from './Stars';
 
 export function ChildHome() {
@@ -13,6 +17,7 @@ export function ChildHome() {
     <div className="kid__page">
       <h1 className="kid__hello">{t('kid.hello', { name: home.child.name })}</h1>
       {home.week ? <WeekCard week={home.week} /> : <p className="kid__card kid__text">{t('kid.noWeek')}</p>}
+      <GamesCard />
       {home.month && <MonthCard month={home.month} />}
     </div>
   );
@@ -37,6 +42,62 @@ function WeekCard({ week }: { week: HomeWeek }) {
         {active ? (week.firstPassOpen ? t('kid.continue') : t('kid.start')) : t('kid.practice')}
       </Link>
       {!active && <p className="muted">{t('kid.practiceNote')}</p>}
+    </section>
+  );
+}
+
+/** The game modes: this week's words in any mode, and the tasks the parent gave. */
+function GamesCard() {
+  const { t } = useI18n();
+  const menu = useLoad(gameMenu, []);
+  if (menu.error) {
+    return (
+      <section className="kid__card">
+        <ErrorMessage error={menu.error} onRetry={menu.reload} />
+      </section>
+    );
+  }
+  const data = menu.data;
+  if (!data || (!data.week && data.tasks.length === 0)) return null;
+  return (
+    <section className="kid__card games" aria-labelledby="games-title">
+      <h2 id="games-title" className="games__title">
+        <span aria-hidden="true">🎲</span> {t('kid.games')}
+      </h2>
+      <p className="muted games__note">{t('kid.gamesNote')}</p>
+      {data.week && (
+        <>
+          <h3 className="games__subtitle">{t('kid.weekWords')}</h3>
+          <div className="games__modes">
+            {GAME_MODES.map((mode) => (
+              <Link key={mode} className="btn btn--ghost games__mode" to={`/child/play/week/${mode}`}>
+                <span className="games__icon" aria-hidden="true">
+                  {MODE_ICONS[mode]}
+                </span>
+                {t(`kid.mode${mode}`)}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+      {data.tasks.length > 0 && (
+        <>
+          <h3 className="games__subtitle">{t('kid.fromParents')}</h3>
+          <ul className="games__tasks">
+            {data.tasks.map((task) => (
+              <li key={task.id}>
+                <Link className="btn btn--ghost games__task" to={`/child/play/task/${task.id}`}>
+                  <span className="games__icon" aria-hidden="true">
+                    {MODE_ICONS[task.mode]}
+                  </span>
+                  <span>{t(`kid.mode${task.mode}`)}</span>
+                  <span className="games__count">{t('kid.taskWords', { count: task.wordCount })}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

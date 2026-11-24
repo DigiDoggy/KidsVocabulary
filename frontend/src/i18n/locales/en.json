@@ -73,7 +73,10 @@
       "pin": "The PIN must be 4 to 6 digits.",
       "pinRepeat": "The PINs do not match.",
       "timezone": "Unknown time zone."
-    }
+    },
+    "devMode": "Dev mode: sign in without a password",
+    "devLogin": "Sign in as {email}",
+    "devPin": "Parent PIN: {pin}"
   },
   "children": {
     "title": "Children",
@@ -94,6 +97,11 @@
     "editTitle": "Edit profile",
     "name": "Name",
     "birthDate": "Birth date",
+    "gender": "Boy or girl",
+    "genderHint": "Only so that texts for the child use the right word forms.",
+    "genderUnset": "Not set",
+    "boy": "Boy",
+    "girl": "Girl",
     "level": "Level",
     "nativeLang": "Native language",
     "targetLang": "Language to learn",
@@ -256,6 +264,46 @@
     "unlearnedHint": "Never spelled correctly in the first pass; they return next month first.",
     "none": "None."
   },
+  "games": {
+    "title": "Game tasks",
+    "hint": "Extra games with their own words. They are just for fun and never change the stars.",
+    "none": "No game tasks yet.",
+    "mode": "Game",
+    "create": "Create a task",
+    "modes": {
+      "CHOICE": "Choose from 4",
+      "SCRAMBLE": "Scrambled letters",
+      "WORD_SEARCH": "Word search"
+    },
+    "modeHint": {
+      "CHOICE": "The child sees a word and picks its translation out of four.",
+      "SCRAMBLE": "The child taps the letters of the translation in the right order.",
+      "WORD_SEARCH": "The child finds the translations in a grid of letters."
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "GIVEN": "Given"
+    },
+    "notPlayed": "not played yet",
+    "played_one": "played {count} time",
+    "played_other": "played {count} times",
+    "taskTitle": "Game: {mode}",
+    "filled": "{n} of at most {max}",
+    "noWords": "No words yet. Add words yourself or let them be suggested.",
+    "wordSearchLimit": "Up to 10 letters, so that the word fits into the grid.",
+    "fillTitle": "Suggest words",
+    "fillHint": "Words come from the AI provider and the dictionary; words the child already knows are welcome here.",
+    "fillCount": "How many words",
+    "full": "The list is full",
+    "give": "Give to {name}",
+    "giveHint": "After that the word list cannot be changed.",
+    "needWords_one": "{count} more word needed",
+    "needWords_other": "{count} more words needed",
+    "givenInfo_one": "The task is in the child's game menu. Played {count} time so far.",
+    "givenInfo_other": "The task is in the child's game menu. Played {count} times so far.",
+    "delete": "Delete task",
+    "deleteConfirm": "Delete this game task?"
+  },
   "topics": {
     "food": "Food",
     "animals": "Animals",
@@ -333,7 +381,28 @@
     "starsLabel": "Stars:",
     "soundOff": "Turn sound off",
     "soundOn": "Turn sound on",
-    "listen": "Listen"
+    "listen": "Listen",
+    "games": "Play with words",
+    "gamesNote": "Games are just for fun: the stars do not change.",
+    "weekWords": "This week's words",
+    "fromParents": "Tasks from your parents",
+    "modeCHOICE": "Choose",
+    "modeSCRAMBLE": "Letters",
+    "modeWORD_SEARCH": "Word search",
+    "taskWords_one": "{count} word",
+    "taskWords_other": "{count} words",
+    "chooseHint": "Pick the right translation",
+    "scrambleHint": "Build the word from the letters",
+    "findHint": "Find the translations of these words in the grid",
+    "gridLabel": "Letter grid",
+    "doneOf": "Done: {n} of {total}",
+    "gameOver": "Well played!",
+    "gameOverText_one": "You did all {count} word.",
+    "gameOverText_other": "You did all {count} words.",
+    "again": "Play again",
+    "hintPickWord": "Now tap the word you need a hint for",
+    "scrambleBoxes": "Your word",
+    "takeBack": "Take back {letter}"
   },
   "crash": {
     "title": "Something went wrong",

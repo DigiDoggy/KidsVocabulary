@@ -26,6 +26,8 @@ services:
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
+      # local development only: sign in as "admin" without a password (PIN 1234); off unless set in .env
+      DEV_MODE: ${DEV_MODE:-false}
     depends_on:
       postgres:
         condition: service_healthy

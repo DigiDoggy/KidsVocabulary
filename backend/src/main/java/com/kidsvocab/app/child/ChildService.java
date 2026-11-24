@@ -4,6 +4,7 @@ import com.kidsvocab.app.AppException;
 import com.kidsvocab.app.AppException.Code;
 import com.kidsvocab.domain.child.Child;
 import com.kidsvocab.domain.child.ChildRepository;
+import com.kidsvocab.domain.child.Gender;
 import com.kidsvocab.domain.child.Level;
 import com.kidsvocab.domain.language.LanguageRepository;
 import com.kidsvocab.domain.study.StudyWeekRepository;
@@ -37,8 +38,8 @@ public class ChildService {
     }
 
     /** Profile data as entered by the parent. */
-    public record ChildData(String name, LocalDate birthDate, Level level, String nativeLang, String targetLang,
-                            Integer defaultWeekSize) {
+    public record ChildData(String name, LocalDate birthDate, Level level, Gender gender, String nativeLang,
+                            String targetLang, Integer defaultWeekSize) {
     }
 
     @Transactional(readOnly = true)
@@ -95,8 +96,8 @@ public class ChildService {
         requireLanguage(data.nativeLang());
         requireLanguage(data.targetLang());
         int weekSize = data.defaultWeekSize() == null ? DEFAULT_WEEK_SIZE : data.defaultWeekSize();
-        child.update(data.name().strip(), data.birthDate(), data.level(), data.nativeLang(), data.targetLang(),
-                weekSize);
+        child.update(data.name().strip(), data.birthDate(), data.level(), data.gender(), data.nativeLang(),
+                data.targetLang(), weekSize);
     }
 
     private void requireLanguage(String code) {

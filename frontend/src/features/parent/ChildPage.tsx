@@ -2,20 +2,23 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   childHome,
+  createGameTask,
   createWeek,
   getChild,
+  listGameTasks,
   listMonths,
   listWeeks,
   setReward,
   switchToChild,
 } from '../../api/client';
-import type { Home, HomeWeek, MonthSummary, WeekSummary } from '../../api/types';
+import type { GameMode, Home, HomeWeek, MonthSummary, WeekSummary } from '../../api/types';
 import { Card, ErrorMessage, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { weekStarts } from '../../lib/dates';
 import { usePageTitle } from '../../lib/a11y';
 import { useLoad } from '../../lib/useLoad';
 import { useParentContext } from './ParentLayout';
+import { GameTaskStatusBadge } from './GameTaskPage';
 import { MonthResultBadge, PointsBar, WeekStatusBadge } from './shared';
 
 const PENDING = ['DRAFT', 'SCHEDULED'];
@@ -67,6 +70,7 @@ export function ChildPage() {
         <CurrentWeekCard home={home} />
         <PreparedWeekCard childId={childId} weeks={weeks} />
         <MonthCard childId={childId} home={home} onSaved={overview.reload} />
+        <GameTasksCard childId={childId} />
         <HistoryCard weeks={weeks} months={months} />
       </div>
     </>
@@ -202,6 +206,70 @@ function MonthCard({ childId, home, onSaved }: { childId: number; home: Home; on
       </form>
       {saved && <p className="ok-text">{t('child.rewardSaved')}</p>}
       <p className="field__hint">{t('child.rewardHint')}</p>
+      <ErrorMessage error={error} />
+    </Card>
+  );
+}
+
+const GAME_MODES: GameMode[] = ['CHOICE', 'SCRAMBLE', 'WORD_SEARCH'];
+
+/** Extra, unscored games with their own words, given to the child as tasks. */
+function GameTasksCard({ childId }: { childId: number }) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const tasks = useLoad(() => listGameTasks(childId), [childId]);
+  const [mode, setMode] = useState<GameMode>('CHOICE');
+  const [run, busy, error] = useAction();
+
+  async function create(e: FormEvent) {
+    e.preventDefault();
+    const task = await run(() => createGameTask(childId, mode));
+    if (task) navigate(`/game-tasks/${task.id}`);
+  }
+
+  return (
+    <Card title={t('games.title')}>
+      <p className="muted">{t('games.hint')}</p>
+      {tasks.error ? (
+        <ErrorMessage error={tasks.error} onRetry={tasks.reload} />
+      ) : !tasks.data ? (
+        <Spinner />
+      ) : tasks.data.length === 0 ? (
+        <p className="muted">{t('games.none')}</p>
+      ) : (
+        <ul className="rows">
+          {tasks.data.map((task) => (
+            <li key={task.id}>
+              <Link to={`/game-tasks/${task.id}`}>
+                {t(`games.modes.${task.mode}`)} · {t('week.wordsCount', { count: task.wordCount })}
+              </Link>
+              <span>
+                {task.status === 'GIVEN' && (
+                  <span className="muted">
+                    {task.timesPlayed > 0 ? t('games.played', { count: task.timesPlayed }) : t('games.notPlayed')}{' '}
+                  </span>
+                )}
+                <GameTaskStatusBadge status={task.status} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="inline-form" onSubmit={create}>
+        <label className="field">
+          <span className="field__label">{t('games.mode')}</span>
+          <select value={mode} onChange={(e) => setMode(e.target.value as GameMode)}>
+            {GAME_MODES.map((m) => (
+              <option key={m} value={m}>
+                {t(`games.modes.${m}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="btn btn--primary" disabled={busy}>
+          {t('games.create')}
+        </button>
+      </form>
       <ErrorMessage error={error} />
     </Card>
   );

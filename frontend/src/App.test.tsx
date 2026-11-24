@@ -113,6 +113,7 @@ describe('App', () => {
 
     await userEvent.type(await screen.findByLabelText('Name'), 'Mari');
     await userEvent.click(screen.getByLabelText(/A1/));
+    await userEvent.selectOptions(screen.getByLabelText(/Boy or girl/), 'GIRL');
     await userEvent.selectOptions(screen.getByLabelText('Native language'), 'et');
     expect(screen.getByRole('option', { name: 'German' })).toBeInTheDocument();
     const size = screen.getByLabelText(/Words per week/);
@@ -126,6 +127,7 @@ describe('App', () => {
       name: 'Mari',
       birthDate: null,
       level: 'A1',
+      gender: 'GIRL',
       nativeLang: 'et',
       targetLang: 'en',
       defaultWeekSize: 8,

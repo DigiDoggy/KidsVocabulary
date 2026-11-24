@@ -7,6 +7,7 @@ import com.kidsvocab.app.training.ProgressService.Report;
 import com.kidsvocab.app.training.ProgressService.ReportWord;
 import com.kidsvocab.core.month.MonthResult;
 import com.kidsvocab.core.month.WeekStats;
+import com.kidsvocab.domain.child.Gender;
 import com.kidsvocab.domain.study.StudyMonth;
 import com.kidsvocab.domain.study.StudyWeek;
 import com.kidsvocab.domain.study.WeekStatus;
@@ -37,7 +38,7 @@ public class ProgressController {
 
     // --- DTOs ------------------------------------------------------------------------------------
 
-    public record ChildInfo(long id, String name, String nativeLang, String targetLang) {
+    public record ChildInfo(long id, String name, Gender gender, String nativeLang, String targetLang) {
     }
 
     public record WeekInfo(long id, WeekStatus status, LocalDate startDate, LocalDate endDate, Integer weekIndex,
@@ -51,8 +52,8 @@ public class ProgressController {
     public record HomeResponse(ChildInfo child, WeekInfo week, MonthInfo month) {
 
         static HomeResponse of(Home h) {
-            ChildInfo child = new ChildInfo(h.child().getId(), h.child().getName(), h.child().getNativeLang(),
-                    h.child().getTargetLang());
+            ChildInfo child = new ChildInfo(h.child().getId(), h.child().getName(), h.child().getGender(),
+                    h.child().getNativeLang(), h.child().getTargetLang());
             StudyWeek w = h.week();
             WeekInfo week = w == null ? null : new WeekInfo(w.getId(), w.getStatus(), w.getStartDate(), w.getEndDate(),
                     w.getWeekIndex(), w.getWordCount(), h.weekPoints(), h.weekMaxPoints(), h.firstPassOpen());

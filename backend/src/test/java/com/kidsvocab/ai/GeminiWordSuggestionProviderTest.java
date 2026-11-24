@@ -68,6 +68,30 @@ class GeminiWordSuggestionProviderTest {
     }
 
     @Test
+    void asksForFillerLetters() {
+        server.expect(requestTo(URL))
+                .andExpect(jsonPath("$.generationConfig.responseSchema.properties.letters.type").value("STRING"))
+                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(
+                        org.hamcrest.Matchers.containsString("word search")))
+                .andExpect(jsonPath("$.contents[0].parts[0].text").value(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("Language: German"),
+                        org.hamcrest.Matchers.containsString("Number of letters: 30"),
+                        org.hamcrest.Matchers.containsString("Hidden words: hund, katze"))))
+                .andRespond(withSuccess(geminiAnswer("```json\\n{\\\"letters\\\": \\\"enrstah\\\"}\\n```"),
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(provider.fillerLetters(new FillerRequest("de", 30, List.of("hund", "katze")))).isEqualTo("enrstah");
+        server.verify();
+
+        server.reset();
+        server.expect(requestTo(URL)).andRespond(withSuccess(geminiAnswer("{\\\"words\\\": []}"),
+                MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> provider.fillerLetters(new FillerRequest("de", 30, List.of())))
+                .isInstanceOfSatisfying(ProviderException.class,
+                        e -> assertThat(e.kind()).isEqualTo(ProviderException.Kind.INVALID_RESPONSE));
+    }
+
+    @Test
     void mapsRateLimitAndServerErrors() {
         server.expect(requestTo(URL)).andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
         assertKind(ProviderException.Kind.RATE_LIMITED);

@@ -419,10 +419,10 @@ function WordEmojiEditor({
 }
 
 const CUSTOM_TOPIC = '__custom__';
-const TOPIC_PATTERN = /^[\p{L} '-]*$/u;
+export const TOPIC_PATTERN = /^[\p{L} '-]*$/u;
 
 /** A dictionary topic or the parent's own one; an own topic is passed to the AI provider as typed. */
-function TopicSelect({ value, onChange }: { value: string; onChange: (topic: string) => void }) {
+export function TopicSelect({ value, onChange }: { value: string; onChange: (topic: string) => void }) {
   const { t, has } = useI18n();
   const topics = useLoad(listTopics, []);
   const [custom, setCustom] = useState(false);

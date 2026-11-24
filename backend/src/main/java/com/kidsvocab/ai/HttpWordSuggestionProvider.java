@@ -12,10 +12,11 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Shared HTTP handling for JSON-over-HTTP model APIs: one POST, error mapping, and parsing of the
- * model's text answer into words.
+ * model's text answer into words or filler letters.
  */
 abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
 
@@ -29,9 +30,24 @@ abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
 
     @Override
     public final List<SuggestedWord> suggest(SuggestionRequest request) {
+        return parseWords(ask(SuggestionPrompt.system(), SuggestionPrompt.user(request), SuggestionPrompt.SCHEMA));
+    }
+
+    @Override
+    public final String fillerLetters(FillerRequest request) {
+        JsonNode letters = parseJson(ask(FillerPrompt.system(), FillerPrompt.user(request), FillerPrompt.SCHEMA))
+                .path("letters");
+        if (!letters.isTextual()) {
+            throw invalid("the JSON has no letters", null);
+        }
+        return letters.asText();
+    }
+
+    /** Sends one prompt and returns the model's text answer. */
+    private String ask(String system, String user, Map<String, Object> schema) {
         JsonNode response;
         try {
-            response = send(request);
+            response = send(system, user, schema);
         } catch (RestClientResponseException e) {
             ProviderException.Kind kind = e.getStatusCode().value() == HttpStatus.TOO_MANY_REQUESTS.value()
                     ? ProviderException.Kind.RATE_LIMITED : ProviderException.Kind.UNAVAILABLE;
@@ -45,27 +61,22 @@ abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
         if (text == null || text.isBlank()) {
             throw invalid("no text in the response", null);
         }
-        return parseWords(text);
+        return text;
     }
 
-    /** Performs the HTTP call and returns the raw JSON response. */
-    protected abstract JsonNode send(SuggestionRequest request);
+    /**
+     * Performs the HTTP call and returns the raw JSON response.
+     *
+     * @param schema the expected answer as a JSON schema, for APIs with structured output
+     */
+    protected abstract JsonNode send(String system, String user, Map<String, Object> schema);
 
     /** Picks the model's generated text out of the response, or {@code null}. */
     protected abstract String extractText(JsonNode response);
 
     /** Accepts {@code {"words": [...]}} or a bare array, optionally wrapped in a Markdown code fence. */
     List<SuggestedWord> parseWords(String text) {
-        String body = text.strip();
-        if (body.startsWith("```")) {
-            body = body.replaceFirst("^```[a-zA-Z]*\\s*", "").replaceFirst("\\s*```$", "");
-        }
-        JsonNode root;
-        try {
-            root = json.readTree(body);
-        } catch (JsonProcessingException e) {
-            throw invalid("the model did not return JSON", e);
-        }
+        JsonNode root = parseJson(text);
         JsonNode items = root.isArray() ? root : root.path("words");
         if (!items.isArray()) {
             throw invalid("the JSON has no word list", null);
@@ -76,6 +87,19 @@ abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
                     text(item, "english"), text(item, "emoji")));
         }
         return words;
+    }
+
+    /** Parses the model's JSON answer, optionally wrapped in a Markdown code fence. */
+    private JsonNode parseJson(String text) {
+        String body = text.strip();
+        if (body.startsWith("```")) {
+            body = body.replaceFirst("^```[a-zA-Z]*\\s*", "").replaceFirst("\\s*```$", "");
+        }
+        try {
+            return json.readTree(body);
+        } catch (JsonProcessingException e) {
+            throw invalid("the model did not return JSON", e);
+        }
     }
 
     private static String text(JsonNode item, String field) {

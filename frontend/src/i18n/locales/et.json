@@ -73,7 +73,10 @@
       "pin": "PIN peab olema 4–6 numbrit.",
       "pinRepeat": "PIN-koodid ei ühti.",
       "timezone": "Tundmatu ajavöönd."
-    }
+    },
+    "devMode": "Arendusrežiim: sisselogimine ilma paroolita",
+    "devLogin": "Logi sisse kui {email}",
+    "devPin": "Vanema PIN: {pin}"
   },
   "children": {
     "title": "Lapsed",
@@ -94,6 +97,11 @@
     "editTitle": "Profiili muutmine",
     "name": "Nimi",
     "birthDate": "Sünnikuupäev",
+    "gender": "Poiss või tüdruk",
+    "genderHint": "Ainult selleks, et lapsele mõeldud tekstid oleksid õiges vormis.",
+    "genderUnset": "Määramata",
+    "boy": "Poiss",
+    "girl": "Tüdruk",
     "level": "Tase",
     "nativeLang": "Emakeel",
     "targetLang": "Õpitav keel",
@@ -256,6 +264,46 @@
     "unlearnedHint": "Esimesel läbimisel ei kirjutatud kordagi õigesti; tulevad järgmisel kuul esimesena tagasi.",
     "none": "Pole."
   },
+  "games": {
+    "title": "Mänguülesanded",
+    "hint": "Lisamängud oma sõnadega. Need on lihtsalt lõbuks ega muuda tähti.",
+    "none": "Mänguülesandeid veel pole.",
+    "mode": "Mäng",
+    "create": "Loo ülesanne",
+    "modes": {
+      "CHOICE": "Vali neljast",
+      "SCRAMBLE": "Segatud tähed",
+      "WORD_SEARCH": "Sõnarägastik"
+    },
+    "modeHint": {
+      "CHOICE": "Laps näeb sõna ja valib neljast variandist tõlke.",
+      "SCRAMBLE": "Laps puudutab tõlke tähti õiges järjekorras.",
+      "WORD_SEARCH": "Laps otsib tõlkeid tähtede ruudustikust."
+    },
+    "status": {
+      "DRAFT": "Mustand",
+      "GIVEN": "Antud"
+    },
+    "notPlayed": "pole veel mängitud",
+    "played_one": "mängitud {count} kord",
+    "played_other": "mängitud {count} korda",
+    "taskTitle": "Mäng: {mode}",
+    "filled": "{n} / kuni {max}",
+    "noWords": "Sõnu veel pole. Lisa need ise või lase soovitada.",
+    "wordSearchLimit": "Kuni 10 tähte, et sõna mahuks ruudustikku.",
+    "fillTitle": "Soovita sõnu",
+    "fillHint": "Sõnad tulevad tehisintellektilt ja sõnastikust; lapsele juba tuttavad sõnad sobivad siia ka.",
+    "fillCount": "Mitu sõna",
+    "full": "Nimekiri on täis",
+    "give": "Anna lapsele: {name}",
+    "giveHint": "Pärast seda ei saa sõnade nimekirja muuta.",
+    "needWords_one": "Vaja veel {count} sõna",
+    "needWords_other": "Vaja veel {count} sõna",
+    "givenInfo_one": "Ülesanne on lapse mängumenüüs. Seni mängitud {count} kord.",
+    "givenInfo_other": "Ülesanne on lapse mängumenüüs. Seni mängitud {count} korda.",
+    "delete": "Kustuta ülesanne",
+    "deleteConfirm": "Kas kustutada see mänguülesanne?"
+  },
   "topics": {
     "food": "Toit",
     "animals": "Loomad",
@@ -333,7 +381,28 @@
     "starsLabel": "Tähed:",
     "soundOff": "Lülita heli välja",
     "soundOn": "Lülita heli sisse",
-    "listen": "Kuula"
+    "listen": "Kuula",
+    "games": "Mängi sõnadega",
+    "gamesNote": "Mängud on lihtsalt lõbuks: tähed ei muutu.",
+    "weekWords": "Selle nädala sõnad",
+    "fromParents": "Ülesanded vanematelt",
+    "modeCHOICE": "Vali",
+    "modeSCRAMBLE": "Tähed",
+    "modeWORD_SEARCH": "Sõnarägastik",
+    "taskWords_one": "{count} sõna",
+    "taskWords_other": "{count} sõna",
+    "chooseHint": "Vali õige tõlge",
+    "scrambleHint": "Pane tähtedest sõna kokku",
+    "findHint": "Leia ruudustikust nende sõnade tõlked",
+    "gridLabel": "Tähtede ruudustik",
+    "doneOf": "Tehtud: {n} / {total}",
+    "gameOver": "Hästi mängitud!",
+    "gameOverText_one": "Tegid läbi {count} sõna.",
+    "gameOverText_other": "Tegid läbi {count} sõna.",
+    "again": "Mängi uuesti",
+    "hintPickWord": "Nüüd puuduta sõna, mille kohta vihjet vajad",
+    "scrambleBoxes": "Sinu sõna",
+    "takeBack": "Võta tagasi {letter}"
   },
   "crash": {
     "title": "Midagi läks valesti",

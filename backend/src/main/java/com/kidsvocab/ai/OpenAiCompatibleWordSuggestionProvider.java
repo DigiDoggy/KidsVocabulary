@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * Any API that implements OpenAI's {@code /chat/completions} (Groq, OpenRouter, Mistral, ...),
- * in JSON mode.
+ * in JSON mode (the schema is described in the prompt, not enforced).
  */
 public class OpenAiCompatibleWordSuggestionProvider extends HttpWordSuggestionProvider {
 
@@ -27,14 +27,14 @@ public class OpenAiCompatibleWordSuggestionProvider extends HttpWordSuggestionPr
     }
 
     @Override
-    protected JsonNode send(SuggestionRequest request) {
+    protected JsonNode send(String system, String user, Map<String, Object> schema) {
         Map<String, Object> body = Map.of(
                 "model", model,
                 "temperature", 0.9,
                 "response_format", Map.of("type", "json_object"),
                 "messages", List.of(
-                        Map.of("role", "system", "content", SuggestionPrompt.system()),
-                        Map.of("role", "user", "content", SuggestionPrompt.user(request))));
+                        Map.of("role", "system", "content", system),
+                        Map.of("role", "user", "content", user)));
         return http.post()
                 .uri("/chat/completions")
                 .contentType(MediaType.APPLICATION_JSON)

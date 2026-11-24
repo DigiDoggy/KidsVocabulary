@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, register } from '../../api/client';
+import { devLogin, fetchInfo, login, register } from '../../api/client';
 import { ApiError } from '../../api/http';
 import { ErrorMessage, Field, OfflineBanner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { usePageTitle } from '../../lib/a11y';
+import { useLoad } from '../../lib/useLoad';
 
 const PIN_PATTERN = /^\d{4,6}$/;
 
@@ -33,6 +34,8 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [run, busy, error] = useAction();
+  const info = useLoad(fetchInfo, []);
+  const dev = info.data?.devMode === true;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -42,11 +45,28 @@ export function LoginPage() {
     }
   }
 
+  async function signInDev() {
+    const session = await run(devLogin);
+    if (session) {
+      navigate('/', { replace: true });
+    }
+  }
+
   return (
     <AuthLayout title={t('auth.loginTitle')}>
+      {dev && (
+        <div className="alert alert--warn dev-login" role="note">
+          <p>{t('auth.devMode')}</p>
+          <button type="button" className="btn btn--primary" disabled={busy} onClick={signInDev}>
+            {t('auth.devLogin', { email: 'admin' })}
+          </button>
+          <p className="muted">{t('auth.devPin', { pin: '1234' })}</p>
+        </div>
+      )}
       <form className="form" onSubmit={submit}>
         <Field label={t('auth.email')}>
-          <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          {/* the dev account's login is "admin", not an e-mail address */}
+          <input type={dev ? 'text' : 'email'} autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
         <Field label={t('auth.password')}>
           <input

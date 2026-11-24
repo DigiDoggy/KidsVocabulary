@@ -12,8 +12,6 @@ import com.kidsvocab.domain.dictionary.Concept;
 import com.kidsvocab.domain.dictionary.ConceptRepository;
 import com.kidsvocab.domain.dictionary.DictionaryQueries;
 import com.kidsvocab.domain.dictionary.DictionaryQueries.Card;
-import com.kidsvocab.domain.dictionary.WordForm;
-import com.kidsvocab.domain.dictionary.WordFormRepository;
 import com.kidsvocab.domain.study.CarryOver;
 import com.kidsvocab.domain.study.CarryOverRepository;
 import com.kidsvocab.domain.study.StudyMonth;
@@ -56,7 +54,7 @@ public class WeekService {
     private final StudyMonthRepository months;
     private final CarryOverRepository carryOvers;
     private final ConceptRepository concepts;
-    private final WordFormRepository forms;
+    private final ParentWords parentWords;
     private final DictionaryQueries dictionary;
     private final WordSuggestionSource suggestions;
     private final WeekLifecycleService lifecycle;
@@ -64,7 +62,7 @@ public class WeekService {
 
     public WeekService(ChildRepository children, StudyWeekRepository weeks, WeekWordRepository words,
                        StudyMonthRepository months, CarryOverRepository carryOvers, ConceptRepository concepts,
-                       WordFormRepository forms, DictionaryQueries dictionary, WordSuggestionSource suggestions,
+                       ParentWords parentWords, DictionaryQueries dictionary, WordSuggestionSource suggestions,
                        WeekLifecycleService lifecycle, Clock clock) {
         this.children = children;
         this.weeks = weeks;
@@ -72,7 +70,7 @@ public class WeekService {
         this.months = months;
         this.carryOvers = carryOvers;
         this.concepts = concepts;
-        this.forms = forms;
+        this.parentWords = parentWords;
         this.dictionary = dictionary;
         this.suggestions = suggestions;
         this.lifecycle = lifecycle;
@@ -154,17 +152,8 @@ public class WeekService {
         StudyWeek week = draft(user, weekId);
         Child child = childOf(week);
         requireRoom(week);
-        String nativeNorm = AnswerNormalizer.normalize(source, locale(child.getNativeLang()));
-        String targetNorm = AnswerNormalizer.normalize(target, locale(child.getTargetLang()));
-        if (nativeNorm.isEmpty() || targetNorm.isEmpty()) {
-            throw new AppException(Code.VALIDATION, "Both the word and its translation are required");
-        }
-        if (nativeNorm.equals(targetNorm)) {
-            throw new AppException(Code.VALIDATION, "The translation must differ from the word");
-        }
         String picture = emojiOrNull(emoji);
-        long conceptId = dictionary.findPair(child.getNativeLang(), nativeNorm, child.getTargetLang(), targetNorm,
-                user.parentId()).orElseGet(() -> createManualConcept(child, source, target, extraAnswers));
+        long conceptId = parentWords.conceptFor(child, user.parentId(), source, target, extraAnswers);
         Card card = card(child, conceptId);
         Set<String> accepted = new LinkedHashSet<>(card.acceptedAnswers());
         for (String extra : extraAnswers == null ? List.<String>of() : extraAnswers) {
@@ -383,27 +372,6 @@ public class WeekService {
         words.save(new WeekWord(week.getId(), card.conceptId(), source, card.prompt(), card.primaryAnswer(),
                 card.acceptedAnswers(), card.emoji()));
         words.flush();
-    }
-
-    private long createManualConcept(Child child, String source, String target, List<String> extraAnswers) {
-        Locale nativeLocale = locale(child.getNativeLang());
-        Locale targetLocale = locale(child.getTargetLang());
-        String targetText = target.strip();
-        Concept concept = concepts.save(new Concept(null, Concept.difficultyOf(targetText), Concept.Origin.MANUAL,
-                child.getParentId(), clock.instant()));
-        forms.save(new WordForm(concept.getId(), child.getNativeLang(), source.strip(),
-                AnswerNormalizer.normalize(source, nativeLocale), true));
-        String primary = AnswerNormalizer.normalize(target, targetLocale);
-        forms.save(new WordForm(concept.getId(), child.getTargetLang(), targetText, primary, true));
-        Set<String> seen = new HashSet<>(Set.of(primary));
-        for (String extra : extraAnswers == null ? List.<String>of() : extraAnswers) {
-            String normalized = AnswerNormalizer.normalize(extra, targetLocale);
-            if (!normalized.isEmpty() && seen.add(normalized)) {
-                forms.save(new WordForm(concept.getId(), child.getTargetLang(), extra.strip(), normalized, false));
-            }
-        }
-        forms.flush();
-        return concept.getId();
     }
 
     private Optional<Concept> ownConcept(CurrentUser user, long conceptId) {

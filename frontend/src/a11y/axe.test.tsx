@@ -33,6 +33,13 @@ const parent = {
   },
   'GET /children/7/weeks': [],
   'GET /children/7/months': [],
+  'GET /children/7/game-tasks': [
+    { id: 4, mode: 'CHOICE', status: 'GIVEN', wordCount: 3, timesPlayed: 1, createdAt: '2026-11-20T10:00:00Z', givenAt: '2026-11-20T10:00:00Z' },
+  ],
+  'GET /game-tasks/4': {
+    id: 4, childId: 7, mode: 'WORD_SEARCH', status: 'DRAFT', timesPlayed: 0, minWords: 3, maxWords: 8,
+    words: [{ id: 1, conceptId: 11, prompt: 'koer', answer: 'dog' }],
+  },
   'GET /dictionary/topics': ['animals'],
   'GET /weeks/6': { id: 6, childId: 7, startDate: thisMonday, endDate: thisMonday, status: 'DRAFT', weekIndex: null, wordCount: 3, missing: 1, points: null, maxPoints: null, words },
   'GET /months/9': { id: 9, seqNo: 1, status: 'COMPLETED', reward: 'Zoo', points: 3, maxPoints: 4, percent: 75, result: 'GOOD', weeks: [] },
@@ -74,6 +81,7 @@ describe('accessibility (axe)', () => {
     ['child page', '/children/7', 'Weeks finished: 0 of 4'],
     ['child form', '/children/7/edit', 'Edit profile'],
     ['week builder', '/weeks/6', 'koer'],
+    ['game task', '/game-tasks/4', 'koer'],
     ['month report', '/months/9', 'Month report'],
     ['profile picker', '/pick', 'Who is training?'],
   ])('%s', async (_name, path, text) => {
@@ -91,6 +99,18 @@ describe('accessibility (axe)', () => {
         id: 33, weekId: 5, kind: 'FIRST_PASS', status: 'IN_PROGRESS', round: 1, points: 0, maxPoints: 4, counts: true, words: [],
         current: { wordId: 1, round: 1, position: 1, prompt: 'koer', hintMask: '_o_', hintAvailable: true, roundSize: 2, remainingInRound: 2 },
       },
+      'GET /me/games': { week: { id: 5, wordCount: 2 }, tasks: [{ id: 4, mode: 'SCRAMBLE', wordCount: 3 }] },
+      'GET /me/games/week/CHOICE': {
+        mode: 'CHOICE', taskId: null, grid: null,
+        words: [{ id: 1, prompt: 'koer', answer: 'dog', options: ['dog', 'cat', 'cow', 'pig'] }],
+      },
+      'GET /me/games/tasks/4': {
+        mode: 'SCRAMBLE', taskId: 4, grid: null, words: [{ id: 1, prompt: 'koer', answer: 'dog', options: null }],
+      },
+      'GET /me/games/week/WORD_SEARCH': {
+        mode: 'WORD_SEARCH', taskId: null, words: [{ id: 1, prompt: 'koer', answer: 'dog', options: null }],
+        grid: { size: 6, rows: ['dogabc', 'aaaaaa', 'bbbbbb', 'cccccc', 'dddddd', 'eeeeee'] },
+      },
       'POST /sessions/33/answers': { verdict: 'WRONG', correctAnswer: 'dog', showCorrectAnswerFor: 5, becameProblematic: false, roundFinished: false, sessionFinished: false, next: null, points: 0 },
     };
 
@@ -98,6 +118,24 @@ describe('accessibility (axe)', () => {
       mockApi(childApi);
       renderAt('/child');
       await userEvent.click(await screen.findByRole('button', { name: /Lapsevanem/ }));
+      await expectNoViolations();
+    });
+
+    it('home with the game menu', async () => {
+      mockApi(childApi);
+      renderAt('/child');
+      await screen.findByRole('heading', { name: /Mängi sõnadega/ });
+      await expectNoViolations();
+    });
+
+    it.each([
+      ['choose from 4', '/child/play/week/CHOICE', 'koer'],
+      ['scrambled letters', '/child/play/task/4', 'koer'],
+      ['word search', '/child/play/week/WORD_SEARCH', 'koer'],
+    ])('%s', async (_name, path, text) => {
+      mockApi(childApi);
+      renderAt(path);
+      await screen.findByText(text);
       await expectNoViolations();
     });
 
