@@ -2,6 +2,7 @@ package com.kidsvocab.app.training;
 
 import com.kidsvocab.app.AppException;
 import com.kidsvocab.app.AppException.Code;
+import com.kidsvocab.app.garden.GardenService;
 import com.kidsvocab.app.week.WeekLifecycleService;
 import com.kidsvocab.core.training.AnswerResult;
 import com.kidsvocab.core.training.CurrentItem;
@@ -31,7 +32,8 @@ import java.util.Optional;
 
 /**
  * Training runs through a week's words. The first run of an active week is the scoring first pass;
- * every other run is practice. Finishing the first pass closes the week right away.
+ * every other run is practice. Finishing the first pass closes the week right away. A garden review
+ * belongs to the child instead of a week; finishing it grows the plants.
  */
 @Service
 public class TrainingService {
@@ -42,25 +44,27 @@ public class TrainingService {
     private final StudyWeekRepository weeks;
     private final ChildRepository children;
     private final WeekLifecycleService lifecycle;
+    private final GardenService garden;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public TrainingService(SessionRecordRepository sessions, SessionEventRepository events, SessionLoader loader,
                            StudyWeekRepository weeks, ChildRepository children, WeekLifecycleService lifecycle,
-                           Clock clock) {
+                           GardenService garden, Clock clock) {
         this.sessions = sessions;
         this.events = events;
         this.loader = loader;
         this.weeks = weeks;
         this.children = children;
         this.lifecycle = lifecycle;
+        this.garden = garden;
         this.clock = clock;
     }
 
-    /** Pictures of a week's words by week word id (the caller has already been allowed to see the week). */
+    /** Pictures of a session's words by week word id (the caller has already been allowed to see it). */
     @Transactional(readOnly = true)
-    public Map<Long, String> emojis(long weekId) {
-        return loader.emojis(weekId);
+    public Map<Long, String> emojis(SessionRecord record) {
+        return loader.emojis(record);
     }
 
     /** A session together with its rebuilt engine state. */
@@ -114,7 +118,7 @@ public class TrainingService {
     @Transactional
     public SessionView get(CurrentUser user, long sessionId) {
         SessionRecord record = viewableSession(user, sessionId);
-        Child child = childOf(weeks.findById(record.getWeekId()).orElseThrow());
+        Child child = childOf(record);
         lifecycle.refresh(child);
         return view(sessions.findById(sessionId).orElseThrow(), child);
     }
@@ -125,14 +129,18 @@ public class TrainingService {
                 weekWordId, round);
         // a retried request for an answer already stored gets the stored result, even if the session has ended
         SessionRecord record = repeat ? refreshedSession(user, sessionId) : activeSession(user, sessionId);
-        Child child = childOf(weeks.findById(record.getWeekId()).orElseThrow());
+        Child child = childOf(record);
         TrainingSession session = loader.load(record, child);
         AnswerResult result = engine(() -> session.submit(weekWordId, round, answer));
         if (!repeat && result.verdict() != AnswerResult.Verdict.IGNORED) {
             append(record, SessionEvent.Kind.ANSWER, weekWordId, round, answer.strip());
             record.sync(session, clock.instant());
-            if (session.status() == TrainingSession.Status.COMPLETED && record.getKind() == SessionRecord.Kind.FIRST_PASS) {
-                lifecycle.close(weeks.findById(record.getWeekId()).orElseThrow(), WeekStatus.COMPLETED);
+            if (session.status() == TrainingSession.Status.COMPLETED) {
+                if (record.getKind() == SessionRecord.Kind.FIRST_PASS) {
+                    lifecycle.close(weeks.findById(record.getWeekId()).orElseThrow(), WeekStatus.COMPLETED);
+                } else if (record.getKind() == SessionRecord.Kind.REVIEW) {
+                    garden.applyReview(record, session, child);
+                }
             }
         }
         return new AnswerOutcome(result, new SessionView(record, session));
@@ -141,7 +149,7 @@ public class TrainingService {
     @Transactional
     public SessionView hint(CurrentUser user, long sessionId, long weekWordId, int round) {
         SessionRecord record = activeSession(user, sessionId);
-        Child child = childOf(weeks.findById(record.getWeekId()).orElseThrow());
+        Child child = childOf(record);
         TrainingSession session = loader.load(record, child);
         CurrentItem before = engine(() -> session.current().orElseThrow());
         engine(() -> session.hint(weekWordId, round));
@@ -156,7 +164,7 @@ public class TrainingService {
     /** The session after bringing its week up to date (the week may just have expired). */
     private SessionRecord refreshedSession(CurrentUser user, long sessionId) {
         SessionRecord record = viewableSession(user, sessionId);
-        lifecycle.refresh(childOf(weeks.findById(record.getWeekId()).orElseThrow()));
+        lifecycle.refresh(childOf(record));
         return sessions.findById(sessionId).orElseThrow();
     }
 
@@ -193,7 +201,14 @@ public class TrainingService {
 
     private SessionRecord viewableSession(CurrentUser user, long sessionId) {
         SessionRecord record = sessions.findById(sessionId).orElseThrow(() -> AppException.notFound("Training"));
-        viewableWeek(user, record.getWeekId());
+        if (record.getKind() == SessionRecord.Kind.REVIEW) {
+            Child child = childOf(record);
+            if (!child.getParentId().equals(user.parentId()) || child.isArchived() || !user.canView(child.getId())) {
+                throw AppException.notFound("Training");
+            }
+        } else {
+            viewableWeek(user, record.getWeekId());
+        }
         return record;
     }
 
@@ -208,5 +223,11 @@ public class TrainingService {
 
     private Child childOf(StudyWeek week) {
         return children.findById(week.getChildId()).orElseThrow();
+    }
+
+    private Child childOf(SessionRecord record) {
+        long childId = record.getChildId() != null ? record.getChildId()
+                : weeks.findById(record.getWeekId()).orElseThrow().getChildId();
+        return children.findById(childId).orElseThrow();
     }
 }

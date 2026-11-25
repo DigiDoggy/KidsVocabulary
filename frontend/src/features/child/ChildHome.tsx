@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { gameMenu } from '../../api/client';
+import { gameMenu, myGarden } from '../../api/client';
 import type { HomeMonth, HomeWeek } from '../../api/types';
 import { ErrorMessage } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -17,6 +17,7 @@ export function ChildHome() {
     <div className="kid__page">
       <h1 className="kid__hello">{t('kid.hello', { name: home.child.name })}</h1>
       {home.week ? <WeekCard week={home.week} /> : <p className="kid__card kid__text">{t('kid.noWeek')}</p>}
+      <GardenCard />
       <GamesCard />
       {home.month && <MonthCard month={home.month} />}
     </div>
@@ -42,6 +43,34 @@ function WeekCard({ week }: { week: HomeWeek }) {
         {active ? (week.firstPassOpen ? t('kid.continue') : t('kid.start')) : t('kid.practice')}
       </Link>
       {!active && <p className="muted">{t('kid.practiceNote')}</p>}
+    </section>
+  );
+}
+
+/** A peek at the word garden, once there is something growing in it. */
+function GardenCard() {
+  const { t } = useI18n();
+  const garden = useLoad(myGarden, []);
+  const data = garden.data;
+  if (!data || data.plantCount === 0) return null;
+  return (
+    <section className="kid__card garden-card" aria-labelledby="garden-title">
+      <h2 id="garden-title" className="games__title">
+        <span aria-hidden="true">🌱</span> {t('kid.garden')}
+      </h2>
+      <p className="kid__text">{t('kid.gardenCount', { count: data.plantCount })}</p>
+      {data.dueCount > 0 && <p className="kid__text">{t('kid.dueCount', { count: data.dueCount })}</p>}
+      <Link
+        className={`btn btn--huge ${data.dueCount > 0 ? 'btn--accent' : 'btn--ghost'}`}
+        to={data.dueCount > 0 ? '/child/garden/water' : '/child/garden'}
+      >
+        {data.dueCount > 0 ? t('kid.water') : t('kid.openGarden')}
+      </Link>
+      {data.dueCount > 0 && (
+        <Link className="btn btn--ghost" to="/child/garden">
+          {t('kid.openGarden')}
+        </Link>
+      )}
     </section>
   );
 }

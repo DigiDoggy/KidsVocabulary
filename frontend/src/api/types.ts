@@ -76,10 +76,19 @@ export interface WordView {
   outcome: Outcome | null;
 }
 
+/** What "Fill up" achieved (only in its own response). */
+export interface FillReport {
+  requested: number;
+  added: number;
+  /** false: the AI provider could not be asked, only the built-in dictionary was used */
+  aiAvailable: boolean;
+}
+
 export interface Week extends WeekSummary {
   childId: number;
   missing: number;
   words: WordView[];
+  fill?: FillReport | null;
 }
 
 export interface WordStat {
@@ -185,7 +194,8 @@ export interface MonthReport {
 
 // --- training ---------------------------------------------------------------------------------------
 
-export type SessionKind = 'FIRST_PASS' | 'PRACTICE';
+/** REVIEW = watering the word garden (belongs to the child, not to a week). */
+export type SessionKind = 'FIRST_PASS' | 'PRACTICE' | 'REVIEW';
 export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED';
 export type Verdict = 'CORRECT' | 'WRONG' | 'IGNORED';
 
@@ -216,7 +226,8 @@ export interface WordState {
 
 export interface TrainingSession {
   id: number;
-  weekId: number;
+  /** null for a garden review */
+  weekId: number | null;
   kind: SessionKind;
   status: SessionStatus;
   round: number;
@@ -291,4 +302,32 @@ export interface GameTask {
   minWords: number;
   maxWords: number;
   words: { id: number; conceptId: number; prompt: string; answer: string }[];
+}
+
+// --- word garden ------------------------------------------------------------------------------------
+
+export type GrowthStage = 'SEED' | 'SPROUT' | 'YOUNG' | 'BLOOMING' | 'FRUIT';
+
+export interface GardenPlant {
+  conceptId: number;
+  /** which drawing, 0..7 */
+  kind: number;
+  stage: GrowthStage;
+  /** wants water today */
+  due: boolean;
+  /** was not watered on its day: drawn drooping */
+  thirsty: boolean;
+  prompt: string;
+  answer: string;
+  emoji: string | null;
+}
+
+export interface Garden {
+  dueCount: number;
+  /** how many plants one watering takes at most */
+  reviewSize: number;
+  openReviewId: number | null;
+  plantCount: number;
+  /** one bed per study month, oldest first; month is null when unknown */
+  beds: { month: number | null; plants: GardenPlant[] }[];
 }

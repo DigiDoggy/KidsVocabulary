@@ -30,7 +30,16 @@ abstract class HttpWordSuggestionProvider implements WordSuggestionProvider {
 
     @Override
     public final List<SuggestedWord> suggest(SuggestionRequest request) {
-        return parseWords(ask(SuggestionPrompt.system(), SuggestionPrompt.user(request), SuggestionPrompt.SCHEMA));
+        List<SuggestedWord> words = parseWords(ask(SuggestionPrompt.system(request), SuggestionPrompt.user(request),
+                SuggestionPrompt.schema(request)));
+        return words.stream().map(w -> completed(w, request)).toList();
+    }
+
+    /** Fills in the fields that were not asked for because the request already answers them. */
+    private static SuggestedWord completed(SuggestedWord w, SuggestionRequest request) {
+        String topic = w.topic() == null && !SuggestionPrompt.asksTopic(request) ? request.topic() : w.topic();
+        String english = w.english() == null && !SuggestionPrompt.asksEnglish(request) ? w.target() : w.english();
+        return new SuggestedWord(w.source(), w.target(), topic, english, w.emoji());
     }
 
     @Override

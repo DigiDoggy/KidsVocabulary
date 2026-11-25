@@ -94,7 +94,8 @@ public class WeekController {
     @PostMapping("/weeks/{weekId}/suggest")
     public WeekResponse fillUp(CurrentUser user, @PathVariable long weekId,
                                @Valid @RequestBody(required = false) TopicRequest request) {
-        return WeekResponse.of(weeks.fillUp(user, weekId, topic(request)));
+        var filled = weeks.fillUp(user, weekId, topic(request));
+        return WeekResponse.of(filled.details(), filled.report());
     }
 
     @PostMapping("/weeks/{weekId}/launch")

@@ -18,15 +18,23 @@ import java.time.Instant;
 @Table(name = "training_session")
 public class SessionRecord {
 
-    /** The first pass of a week scores points; practice runs do not. */
-    public enum Kind { FIRST_PASS, PRACTICE }
+    /**
+     * The first pass of a week scores points; practice runs do not. A review waters the child's word
+     * garden: it belongs to the child, not to a week.
+     */
+    public enum Kind { FIRST_PASS, PRACTICE, REVIEW }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "week_id", nullable = false)
+    /** {@code null} for a review. */
+    @Column(name = "week_id")
     private Long weekId;
+
+    /** Set for a review only. */
+    @Column(name = "child_id")
+    private Long childId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -63,6 +71,13 @@ public class SessionRecord {
         this.currentRound = 1;
     }
 
+    /** A garden review of the child's words. */
+    public static SessionRecord review(long childId, long seed, Instant startedAt) {
+        SessionRecord r = new SessionRecord(null, Kind.REVIEW, seed, startedAt);
+        r.childId = childId;
+        return r;
+    }
+
     /** Mirrors the engine state into the row (for queries; the event log stays the source of truth). */
     public void sync(TrainingSession session, Instant now) {
         this.currentRound = session.round();
@@ -85,6 +100,10 @@ public class SessionRecord {
 
     public Long getWeekId() {
         return weekId;
+    }
+
+    public Long getChildId() {
+        return childId;
     }
 
     public Kind getKind() {

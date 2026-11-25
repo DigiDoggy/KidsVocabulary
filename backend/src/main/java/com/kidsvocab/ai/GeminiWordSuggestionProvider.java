@@ -14,6 +14,12 @@ import java.util.Map;
  */
 public class GeminiWordSuggestionProvider extends HttpWordSuggestionProvider {
 
+    /**
+     * A cap on the answer's length. A full week is well under 1,000 tokens; the cap only stops a model that
+     * loops inside a value, so the request fails within seconds instead of running into the timeout.
+     */
+    static final int MAX_OUTPUT_TOKENS = 4096;
+
     private final String model;
 
     public GeminiWordSuggestionProvider(RestClient http, ObjectMapper json, String model) {
@@ -33,6 +39,7 @@ public class GeminiWordSuggestionProvider extends HttpWordSuggestionProvider {
                 "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", user)))),
                 "generationConfig", Map.of(
                         "temperature", 0.9,
+                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
                         "responseMimeType", "application/json",
                         "responseSchema", schema));
         return http.post()

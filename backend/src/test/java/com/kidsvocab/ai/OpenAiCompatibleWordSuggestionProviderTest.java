@@ -51,7 +51,7 @@ class OpenAiCompatibleWordSuggestionProviderTest {
                 .andRespond(withSuccess(answer("{\\\"words\\\": [{\\\"source\\\": \\\"x\\\", \\\"target\\\": \\\"cat\\\"}]}"),
                         MediaType.APPLICATION_JSON));
 
-        assertThat(provider.suggest(REQUEST)).containsExactly(new SuggestedWord("x", "cat", null));
+        assertThat(provider.suggest(REQUEST)).containsExactly(new SuggestedWord("x", "cat", null, "cat"));
         assertThat(provider.id()).isEqualTo("openai-compatible");
     }
 
@@ -61,7 +61,7 @@ class OpenAiCompatibleWordSuggestionProviderTest {
                 answer("```json\\n[{\\\"source\\\": \\\"x\\\", \\\"target\\\": \\\"dog\\\", \\\"topic\\\": 5}]\\n```"),
                 MediaType.APPLICATION_JSON));
 
-        assertThat(provider.suggest(REQUEST)).containsExactly(new SuggestedWord("x", "dog", null));
+        assertThat(provider.suggest(REQUEST)).containsExactly(new SuggestedWord("x", "dog", null, "dog"));
     }
 
     @Test

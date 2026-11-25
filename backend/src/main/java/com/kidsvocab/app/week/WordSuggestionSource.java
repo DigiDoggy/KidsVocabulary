@@ -20,4 +20,9 @@ public interface WordSuggestionSource {
     }
 
     List<Suggestion> suggest(Request request);
+
+    /** Whether an AI provider can be asked right now (otherwise only the local dictionary is used). */
+    default boolean aiAvailable() {
+        return false;
+    }
 }

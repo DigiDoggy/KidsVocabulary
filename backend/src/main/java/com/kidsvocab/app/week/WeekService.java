@@ -78,6 +78,19 @@ public class WeekService {
     }
 
     /** A week with its words. */
+    /**
+     * What "Fill up" achieved, so the parent learns why a set stayed short.
+     *
+     * @param requested   free places before filling
+     * @param added       words added
+     * @param aiAvailable whether the AI provider could be asked (otherwise only the local dictionary was used)
+     */
+    public record FillReport(int requested, int added, boolean aiAvailable) {
+    }
+
+    public record FilledWeek(WeekDetails details, FillReport report) {
+    }
+
     public record WeekDetails(StudyWeek week, List<WeekWord> words) {
 
         public int missing() {
@@ -207,10 +220,14 @@ public class WeekService {
 
     /** Fills the set up to its word count with suggestions. */
     @Transactional
-    public WeekDetails fillUp(CurrentUser user, long weekId, String topic) {
+    public FilledWeek fillUp(CurrentUser user, long weekId, String topic) {
         StudyWeek week = draft(user, weekId);
+        int before = (int) words.countByWeekId(week.getId());
+        int requested = Math.max(0, week.getWordCount() - before);
         fill(childOf(week), week, topic);
-        return details(week);
+        WeekDetails details = details(week);
+        return new FilledWeek(details,
+                new FillReport(requested, details.words().size() - before, suggestions.aiAvailable()));
     }
 
     // --- launching -------------------------------------------------------------------------------

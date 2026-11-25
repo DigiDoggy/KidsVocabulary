@@ -10,7 +10,11 @@ import com.kidsvocab.core.week.WeekResult;
 import com.kidsvocab.core.week.WeekSummarizer;
 import com.kidsvocab.core.week.WordResult;
 import com.kidsvocab.domain.account.ParentAccountRepository;
+import com.kidsvocab.core.garden.Plant;
+import com.kidsvocab.core.scoring.Outcome;
 import com.kidsvocab.domain.child.Child;
+import com.kidsvocab.domain.child.ChildRepository;
+import com.kidsvocab.domain.study.GardenRepository;
 import com.kidsvocab.domain.study.CarryOver;
 import com.kidsvocab.domain.study.CarryOverRepository;
 import com.kidsvocab.domain.study.SessionRecord;
@@ -32,6 +36,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,12 +56,15 @@ public class WeekLifecycleService {
     private final ParentAccountRepository accounts;
     private final FirstPassProgress firstPass;
     private final SessionRecordRepository sessions;
+    private final GardenRepository garden;
+    private final ChildRepository children;
     private final Clock clock;
 
     public WeekLifecycleService(StudyWeekRepository weeks, WeekWordRepository words, StudyMonthRepository months,
                                 CarryOverRepository carryOvers, ChildWordHistory history,
                                 ParentAccountRepository accounts, FirstPassProgress firstPass,
-                                SessionRecordRepository sessions, Clock clock) {
+                                SessionRecordRepository sessions, GardenRepository garden,
+                                ChildRepository children, Clock clock) {
         this.weeks = weeks;
         this.words = words;
         this.months = months;
@@ -65,6 +73,8 @@ public class WeekLifecycleService {
         this.accounts = accounts;
         this.firstPass = firstPass;
         this.sessions = sessions;
+        this.garden = garden;
+        this.children = children;
         this.clock = clock;
     }
 
@@ -116,17 +126,28 @@ public class WeekLifecycleService {
                 .orElse(StudyMonth.WEEKS);
     }
 
-    /** Closes a week, records the result per word and, after the fourth week, closes the month. */
+    /**
+     * Closes a week, records the result per word, plants every learned or hard word that is not in the
+     * garden yet and, after the fourth week, closes the month.
+     */
     @Transactional
     public void close(StudyWeek week, WeekStatus closedStatus) {
         List<WeekWord> weekWords = words.findByWeekIdOrderById(week.getId());
         WeekResult result = WeekSummarizer.summarize(firstPass.wordStates(week, weekWords));
         Map<Long, WordResult> byWord = result.words().stream()
                 .collect(Collectors.toMap(WordResult::wordId, Function.identity()));
+        LocalDate closedOn = null;
         for (WeekWord word : weekWords) {
             WordResult r = byWord.get(word.getId());
             word.recordResult(r.solvedRound(), r.hintUsed(), r.problematic(), r.points(), r.outcome());
             history.record(week.getChildId(), word.getConceptId(), r.outcome(), week.getId());
+            if (r.outcome() != Outcome.UNLEARNED) {
+                if (closedOn == null) {
+                    closedOn = today(children.findById(week.getChildId()).orElseThrow());
+                }
+                garden.plantIfNew(week.getChildId(), word.getConceptId(),
+                        Plant.seed(ThreadLocalRandom.current().nextInt(Plant.KINDS), closedOn), week.getId());
+            }
         }
         week.close(closedStatus, result.points(), result.maxPoints(), clock.instant());
         sessions.findByWeekIdAndKind(week.getId(), SessionRecord.Kind.FIRST_PASS).ifPresent(SessionRecord::closeIfOpen);

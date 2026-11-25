@@ -266,6 +266,35 @@ describe('App', () => {
       expect(api.called('POST', '/weeks/5/suggest')[0].body).toEqual({ topic: 'winter sports' });
     });
 
+    it.each([
+      [{ requested: 1, added: 0, aiAvailable: false }, /suggestion service is not available.*no words for this topic/],
+      [{ requested: 20, added: 5, aiAvailable: false }, /Added 5 of 20 words: the word suggestion service/],
+      [{ requested: 1, added: 0, aiAvailable: true }, /No new words were found for this topic/],
+      [{ requested: 20, added: 5, aiAvailable: true }, /Only 5 of 20 words were found/],
+    ])('says why a fill-up stayed short: %o', async (fill, message) => {
+      mockApi({ ...signedInParent, 'GET /weeks/5': draft(), 'POST /weeks/5/suggest': draft({ fill }) });
+      renderAt('/weeks/5');
+
+      await screen.findByText('koer');
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 word' }));
+
+      expect(await screen.findByText(message)).toBeInTheDocument();
+    });
+
+    it('says nothing when a fill-up filled every place', async () => {
+      const api = mockApi({
+        ...signedInParent,
+        'GET /weeks/5': draft(),
+        'POST /weeks/5/suggest': draft({ missing: 0, fill: { requested: 1, added: 1, aiAvailable: true } }),
+      });
+      renderAt('/weeks/5');
+
+      await screen.findByText('koer');
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 word' }));
+      await waitFor(() => expect(api.called('POST', '/weeks/5/suggest')).toHaveLength(1));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
     it('lets the parent clear the number of words before typing a new one', async () => {
       const api = mockApi({
         ...signedInParent,

@@ -7,6 +7,7 @@ import { LoginPage, RegisterPage } from './features/auth/AuthPages';
 import { ChildHome } from './features/child/ChildHome';
 import { ChildLayout } from './features/child/ChildLayout';
 import { GamePage } from './features/child/GamePage';
+import { GardenPage } from './features/child/GardenPage';
 import { TrainingPage } from './features/child/TrainingPage';
 import { ChildFormPage } from './features/parent/ChildFormPage';
 import { ChildPage } from './features/parent/ChildPage';
@@ -50,7 +51,9 @@ export function AppRoutes() {
       <Route path="/register" element={<Guard need="anonymous"><RegisterPage /></Guard>} />
       <Route path="/child" element={<Guard need="CHILD"><ChildLayout /></Guard>}>
         <Route index element={<ChildHome />} />
-        <Route path="train" element={<TrainingPage />} />
+        <Route path="train" element={<TrainingPage key="week" />} />
+        <Route path="garden" element={<GardenPage />} />
+        <Route path="garden/water" element={<TrainingPage key="garden" source="garden" />} />
         <Route path="play/week/:mode" element={<GamePage key="week" source="week" />} />
         <Route path="play/task/:taskId" element={<GamePage key="task" source="task" />} />
       </Route>

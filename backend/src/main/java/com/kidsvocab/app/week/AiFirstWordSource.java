@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,13 +42,17 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>If too few words survive, ask once more with the extended exclusion list.</li>
  *   <li>Whatever is still missing comes from {@link DictionaryWordSource}.</li>
  * </ol>
- * After a network error or an exhausted quota the provider is skipped for {@code app.ai.cooldown}.
+ * A provider that is briefly unavailable (e.g. HTTP 503, "overloaded") is asked once more after a short
+ * pause. After a second failure, a network error or an exhausted quota the provider is skipped for
+ * {@code app.ai.cooldown}.
  */
 @Component
 @Primary
 public class AiFirstWordSource implements WordSuggestionSource {
 
     static final int MAX_CALLS = 2;
+    /** Pause before asking an unavailable provider once more. */
+    static final Duration RETRY_PAUSE = Duration.ofMillis(800);
     private static final Logger log = LoggerFactory.getLogger(AiFirstWordSource.class);
 
     private final ObjectProvider<WordSuggestionProvider> provider;
@@ -102,6 +107,7 @@ public class AiFirstWordSource implements WordSuggestionSource {
         List<String> topics = concepts.findSharedTopics();
         SuggestionValidator validator = new SuggestionValidator(stopWords, Set.copyOf(topics));
 
+        boolean retried = false;
         for (int call = 0; call < MAX_CALLS && result.size() < request.count(); call++) {
             int wanted = request.count() - result.size();
             SuggestionRequest aiRequest = new SuggestionRequest(request.childAge(), request.level(), request.topic(),
@@ -111,6 +117,15 @@ public class AiFirstWordSource implements WordSuggestionSource {
             try {
                 words = ai.suggest(aiRequest);
             } catch (ProviderException e) {
+                if (e.kind() == ProviderException.Kind.UNAVAILABLE && !retried) {
+                    // a busy provider often answers the next request: try once more before the cooldown
+                    retried = true;
+                    requestLog.record(ai.id(), AiRequestLog.Status.ERROR, null, null, millisSince(started),
+                            e.getMessage());
+                    pause();
+                    call--;
+                    continue;
+                }
                 handleFailure(ai, e, millisSince(started));
                 if (e.kind() != ProviderException.Kind.INVALID_RESPONSE) {
                     return;
@@ -182,6 +197,20 @@ public class AiFirstWordSource implements WordSuggestionSource {
             skipUntil.set(clock.instant().plus(properties.cooldown()));
             log.warn("AI provider {} failed ({}); using the local dictionary for {}", ai.id(), e.getMessage(),
                     properties.cooldown());
+        }
+    }
+
+    /** Whether the AI provider is configured and not resting after a failure. */
+    @Override
+    public boolean aiAvailable() {
+        return provider.getIfAvailable() != null && clock.instant().isAfter(skipUntil.get());
+    }
+
+    private static void pause() {
+        try {
+            Thread.sleep(RETRY_PAUSE);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { getSession, requestHint, startSession, submitAnswer } from '../../api/client';
+import { getSession, requestHint, startSession, startWatering, submitAnswer } from '../../api/client';
 import { ApiError } from '../../api/http';
 import type { AnswerResponse, CurrentItem, TrainingSession } from '../../api/types';
 import { ErrorMessage, Spinner } from '../../components/ui';
@@ -30,34 +30,44 @@ const SPEAK_AFTER_CORRECT_MS = 450;
 
 type Phase =
   | { kind: 'question' }
-  | { kind: 'correct'; result: AnswerResponse }
+  | { kind: 'correct'; result: AnswerResponse; given: string }
   | { kind: 'wrong'; result: AnswerResponse; given: string }
   | { kind: 'round'; next: CurrentItem; finishedRound: number }
   | { kind: 'finished'; session: TrainingSession }
   | { kind: 'closed' };
 
-export function TrainingPage() {
+/** Where a training comes from: this week's set, or watering the word garden. */
+export type TrainingSource = 'week' | 'garden';
+
+export function TrainingPage({ source = 'week' }: { source?: TrainingSource }) {
   const { home } = useChildContext();
   const weekId = home.week?.id;
-  const session = useLoad(() => (weekId ? startSession(weekId) : Promise.resolve(null)), [weekId]);
+  const session = useLoad(
+    () => (source === 'garden' ? startWatering() : weekId ? startSession(weekId) : Promise.resolve(null)),
+    [source, weekId],
+  );
 
-  if (!weekId) return <Navigate to="/child" replace />;
+  if (source === 'week' && !weekId) return <Navigate to="/child" replace />;
+  // nothing to water (any more): back to the garden
+  if (source === 'garden' && session.error instanceof ApiError && session.error.code === 'CONFLICT') {
+    return <Navigate to="/child/garden" replace />;
+  }
   if (session.error) {
     return (
       <div className="kid__page">
         <ErrorMessage error={session.error} onRetry={session.reload} />
-        <BackHome />
+        <BackHome source={source} />
       </div>
     );
   }
   if (!session.data) return <Spinner />;
-  return <Trainer key={session.data.id} initial={session.data} />;
+  return <Trainer key={session.data.id} initial={session.data} source={source} />;
 }
 
-function Trainer({ initial }: { initial: TrainingSession }) {
+function Trainer({ initial, source }: { initial: TrainingSession; source: TrainingSource }) {
   const { t, formatNumber } = useI18n();
   const { reloadHome, home } = useChildContext();
-  usePageTitle(t('kid.trainingTitle'));
+  usePageTitle(t(source === 'garden' ? 'kid.wateringTitle' : 'kid.trainingTitle'));
   const [item, setItem] = useState<CurrentItem | null>(initial.current);
   const [points, setPoints] = useState(initial.points);
   const [phase, setPhase] = useState<Phase>(
@@ -118,7 +128,8 @@ function Trainer({ initial }: { initial: TrainingSession }) {
   // sounds of the answer: an effect first, then the word in the target language (if sound is on)
   useEffect(() => {
     if ((phase.kind !== 'correct' && phase.kind !== 'wrong') || !soundOnRef.current) return;
-    const word = phase.result.correctAnswer;
+    // a correct answer may be another accepted spelling ("talk" for "speak"): say what the child wrote
+    const word = phase.kind === 'correct' ? phase.given.trim() : phase.result.correctAnswer;
     let delay: number;
     if (phase.kind === 'correct') {
       playCorrect();
@@ -160,7 +171,7 @@ function Trainer({ initial }: { initial: TrainingSession }) {
       if (result.verdict === 'CORRECT') {
         praise.current = PRAISE_KEYS[Math.floor(Math.random() * PRAISE_KEYS.length)];
         reaction.current = CORRECT_REACTIONS[Math.floor(Math.random() * CORRECT_REACTIONS.length)];
-        setPhase({ kind: 'correct', result });
+        setPhase({ kind: 'correct', result, given: answer });
       } else {
         setPhase({ kind: 'wrong', result, given: answer });
       }
@@ -192,13 +203,17 @@ function Trainer({ initial }: { initial: TrainingSession }) {
         <p className="kid__big-icon" aria-hidden="true">⏰</p>
         <h1>{t('kid.closedTitle')}</h1>
         <p className="kid__text">{t('kid.closedText')}</p>
-        <BackHome />
+        <BackHome source={source} />
       </div>
     );
   }
 
   if (phase.kind === 'finished') {
-    return <Summary session={phase.session} />;
+    return phase.session.kind === 'REVIEW' ? (
+      <WateredSummary session={phase.session} />
+    ) : (
+      <Summary session={phase.session} />
+    );
   }
 
   if (phase.kind === 'round') {
@@ -231,8 +246,12 @@ function Trainer({ initial }: { initial: TrainingSession }) {
       <div className="train__status">
         <span className="train__start">
           {/* a way out at any moment: the session resumes where the child left it */}
-          <Link className="train__home" to="/child" aria-label={t('kid.home')}>
-            <span aria-hidden="true">🏠</span>
+          <Link
+            className="train__home"
+            to={source === 'garden' ? '/child/garden' : '/child'}
+            aria-label={source === 'garden' ? t('kid.toGarden') : t('kid.home')}
+          >
+            <span aria-hidden="true">{source === 'garden' ? '🌱' : '🏠'}</span>
           </Link>
           <button
             type="button"
@@ -251,10 +270,17 @@ function Trainer({ initial }: { initial: TrainingSession }) {
             <span key={i} className={`train__dot${i < done ? ' is-done' : i === done ? ' is-current' : ''}`} />
           ))}
         </span>
-        <span className="train__points">
-          <span aria-hidden="true">⭐</span>
-          <span className="visually-hidden">{t('kid.starsLabel')}</span> {formatNumber(points)}
-        </span>
+        {/* watering the garden has no stars: it only grows plants */}
+        {initial.kind === 'REVIEW' ? (
+          <span className="train__points" aria-hidden="true">
+            💧
+          </span>
+        ) : (
+          <span className="train__points">
+            <span aria-hidden="true">⭐</span>
+            <span className="visually-hidden">{t('kid.starsLabel')}</span> {formatNumber(points)}
+          </span>
+        )}
       </div>
 
       <div className="train__stage">
@@ -387,9 +413,27 @@ function Summary({ session }: { session: TrainingSession }) {
   );
 }
 
-function BackHome() {
+/** End of watering: the plants spelled right at once have grown. */
+function WateredSummary({ session }: { session: TrainingSession }) {
   const { t } = useI18n();
+  const grew = session.words.filter((w) => w.solvedRound === 1 && !w.hintUsed).length;
   return (
+    <div className="kid__page kid__center">
+      <p className="kid__big-icon" aria-hidden="true">🌻</p>
+      <h1>{t('kid.gardenWatered')}</h1>
+      <p className="kid__text">{grew > 0 ? t('kid.grew', { count: grew }) : t('kid.grewNone')}</p>
+      <BackHome source="garden" />
+    </div>
+  );
+}
+
+function BackHome({ source = 'week' }: { source?: TrainingSource }) {
+  const { t } = useI18n();
+  return source === 'garden' ? (
+    <Link className="btn btn--accent btn--huge" to="/child/garden">
+      <span aria-hidden="true">🌱</span> {t('kid.toGarden')}
+    </Link>
+  ) : (
     <Link className="btn btn--accent btn--huge" to="/child">
       {t('kid.home')}
     </Link>

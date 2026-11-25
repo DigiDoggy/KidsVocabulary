@@ -128,6 +128,17 @@ describe('training screen', () => {
     await waitFor(() => expect(spoken).toEqual(['dog']));
   });
 
+  it('says the spelling the child typed when it is another accepted one', async () => {
+    const spoken = stubSpeech();
+    renderTraining({
+      'POST /sessions/33/answers': answer({ verdict: 'CORRECT', correctAnswer: 'speak', next: cat, points: 2 }),
+    });
+
+    await type('talk');
+
+    await waitFor(() => expect(spoken).toEqual(['talk']));
+  });
+
   it('wags a finger after a mistake and lets the child listen to the right word', async () => {
     const spoken = stubSpeech();
     renderTraining({

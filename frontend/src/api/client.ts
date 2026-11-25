@@ -17,6 +17,7 @@ import type {
   HintResponse,
   TokenResponse,
   TrainingSession,
+  Garden,
   Week,
   WeekSummary,
   WordStat,
@@ -125,6 +126,12 @@ export const submitAnswer = (sessionId: number, weekWordId: number, round: numbe
   post<AnswerResponse>(`/sessions/${sessionId}/answers`, { weekWordId, round, answer });
 export const requestHint = (sessionId: number, weekWordId: number, round: number) =>
   post<HintResponse>(`/sessions/${sessionId}/hint`, { weekWordId, round });
+
+// --- word garden ----------------------------------------------------------------------------------
+
+export const myGarden = () => get<Garden>('/me/garden');
+/** Starts watering the garden (or continues it); 409 CONFLICT when no plant needs water. */
+export const startWatering = () => post<TrainingSession>('/me/garden/reviews');
 
 // --- games (unscored) ------------------------------------------------------------------------------
 

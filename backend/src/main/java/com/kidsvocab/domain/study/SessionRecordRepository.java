@@ -11,4 +11,7 @@ public interface SessionRecordRepository extends JpaRepository<SessionRecord, Lo
 
     Optional<SessionRecord> findFirstByWeekIdAndKindAndStatusOrderByIdDesc(Long weekId, SessionRecord.Kind kind,
                                                                           TrainingSession.Status status);
+
+    Optional<SessionRecord> findFirstByChildIdAndKindAndStatusOrderByIdDesc(Long childId, SessionRecord.Kind kind,
+                                                                           TrainingSession.Status status);
 }

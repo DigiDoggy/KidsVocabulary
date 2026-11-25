@@ -150,6 +150,41 @@ class AiFirstWordSourceIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void busyProviderIsAskedOnceMore() throws Exception {
+        when(provider.suggest(any()))
+                .thenThrow(new ProviderException(ProviderException.Kind.UNAVAILABLE, "fake answered HTTP 503", null))
+                .thenReturn(List.of(new SuggestedWord("vihmavari", "umbrella", null),
+                        new SuggestedWord("kaelkirjak", "giraffe", null)));
+
+        JsonNode week = fill(2);
+
+        assertThat(texts(week, "source")).containsOnly("AI");
+        verify(provider, times(2)).suggest(any());
+        assertThat(week.get("fill").get("requested").asInt()).isEqualTo(2);
+        assertThat(week.get("fill").get("added").asInt()).isEqualTo(2);
+        assertThat(week.get("fill").get("aiAvailable").asBoolean()).isTrue();
+    }
+
+    @Test
+    void ownTopicWithAProviderDownAddsNothingAndSaysWhy() throws Exception {
+        when(provider.suggest(any())).thenThrow(
+                new ProviderException(ProviderException.Kind.UNAVAILABLE, "fake answered HTTP 503", null));
+        long weekId = createDraft(3);
+
+        String body = mvc.perform(withAuth(post("/api/v1/weeks/" + weekId + "/suggest"), parent)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"topic\": \"weather\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode week = json.readTree(body);
+
+        verify(provider, times(2)).suggest(any());
+        assertThat(week.get("words")).isEmpty();
+        assertThat(week.get("fill").get("requested").asInt()).isEqualTo(3);
+        assertThat(week.get("fill").get("added").asInt()).isZero();
+        assertThat(week.get("fill").get("aiAvailable").asBoolean()).isFalse();
+    }
+
+    @Test
     void invalidAnswerIsRetriedWithoutCooldown() throws Exception {
         when(provider.suggest(any()))
                 .thenThrow(new ProviderException(ProviderException.Kind.INVALID_RESPONSE, "not JSON", null))

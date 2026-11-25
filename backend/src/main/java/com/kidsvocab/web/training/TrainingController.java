@@ -49,14 +49,15 @@ public class TrainingController {
     }
 
     /**
+     * @param weekId    {@code null} for a garden review
      * @param points    points as they stand (first pass: what counts; practice: for fun only)
      * @param counts    whether this session's points count towards the month
      */
-    public record SessionResponse(long id, long weekId, SessionRecord.Kind kind, TrainingSession.Status status,
+    public record SessionResponse(long id, Long weekId, SessionRecord.Kind kind, TrainingSession.Status status,
                                   int round, ItemView current, BigDecimal points, BigDecimal maxPoints,
                                   boolean counts, List<WordStateView> words) {
 
-        static SessionResponse of(SessionView v, Map<Long, String> emojis) {
+        public static SessionResponse of(SessionView v, Map<Long, String> emojis) {
             var result = v.result();
             return new SessionResponse(v.record().getId(), v.record().getWeekId(), v.record().getKind(),
                     v.session().status(), v.session().round(), ItemView.of(v.current(), emojis), result.points(),
@@ -116,12 +117,12 @@ public class TrainingController {
         AnswerResult r = outcome.result();
         return new AnswerResponse(r.verdict(), r.correctAnswer(), showCorrectAnswerSeconds, r.becameProblematic(),
                 r.roundFinished(), r.sessionFinished(),
-                ItemView.of(outcome.view().current(), training.emojis(outcome.view().record().getWeekId())),
+                ItemView.of(outcome.view().current(), training.emojis(outcome.view().record())),
                 outcome.view().result().points());
     }
 
     private SessionResponse respond(SessionView view) {
-        return SessionResponse.of(view, training.emojis(view.record().getWeekId()));
+        return SessionResponse.of(view, training.emojis(view.record()));
     }
 
     @PostMapping("/sessions/{sessionId}/hint")

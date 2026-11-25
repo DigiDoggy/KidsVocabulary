@@ -107,6 +107,9 @@ The authoritative schema lives in the Flyway migrations under `backend/src/main/
 - `V4__week_planning.sql` — week month/index assigned on activation, one prepared week per child, carry-over placement tracking, automatic draft marker.
 - `V5__training_events.sql` — training sessions as an event log (`training_event`), replacing the unused per-round snapshot tables.
 - `V6__german.sql` — German as a target language (no seed words).
+- `V7__word_emoji.sql`, `V8__game_tasks.sql`, `V9__child_gender.sql` — word pictures, game tasks and
+  week word search grids, optional child gender (milestones 9–10).
+- `V10__word_garden.sql` — plant columns on `child_word`, garden review sessions (`review_word`) (milestone 11).
 - `V3__seed_dictionary.sql` — a starter dictionary of ~275 concepts with primary forms in en/ru/et and accepted English variants (mum/mom, grey/gray), grouped by topic (animals, food, family, school, colours, numbers, home, clothes, body, nature, transport, toys, actions, describing words). Prompts are unambiguous within each native language; words spelled the same in the native language and English are excluded. These rules are checked by `SeedDictionaryIntegrationTest`.
 
 Notable details:
@@ -585,10 +588,40 @@ of milestone 9 (and its sound switch) only.
 - Review session: "Water the garden" picks due words (overdue first, at most one week's size), trains
   them like a practice session and moves plants up. It does not change week points.
 - Garden screen: plants grouped in beds by study month; tap a plant to see the word and its emoji.
+  Within a bed plants of one kind stand together, youngest first, so a row reads as real growth and
+  never as a tree turning into a flower. A tree grows seed → sprout → sapling twig → tree in blossom →
+  tree with fruit; a flower grows seed → sprout → leafy stem → bud → open flower.
 - Storage: `child_word` gets `plant_kind smallint`, `growth_stage smallint`, `next_review_on date`
   (a few bytes per word; even 1000 words is tens of kilobytes). Pictures are not stored per word:
   one shared set of SVG drawings (about 8 kinds x 5 stages = 40 small SVGs, ~100-150 KB in total,
   cached by the browser), so the garden costs the same whatever the number of words.
+
+Implementation details (decided 2026-11-24):
+
+- **Success and failure.** A review succeeds when the word is spelled right in round 1 without a hint
+  (the session still runs all rounds like practice). Success: one stage up (FRUIT stays FRUIT) and the
+  next wait doubles. Failure: the stage stays, the word is due again tomorrow, and the wait after the next
+  success is back to 1 week. `child_word.review_interval_weeks` holds the current wait: a new plant waits
+  1 week; on success the wait becomes `max(1, min(2 × wait, 16))`, on failure 0. So the waits are
+  1 → 2 → 4 → 8 → 16 weeks, and a FRUIT plant keeps a rare upkeep review every 16 weeks.
+- **Due and thirsty.** A plant is due when `next_review_on ≤ today`, thirsty (drooping) when
+  `next_review_on < today`. "Water the garden" takes the due plants, the most overdue first, at most the
+  child's default week size; an unfinished watering is resumed. Nothing due → nothing to water.
+- **Planting.** When a week closes, every `LEARNED` or `HARD` word without a plant gets one: a random
+  kind out of 8 (apple, cherry and pear trees, sunflower, tulip, cactus, rose, daisy), `SEED`, due one
+  week after closing. A word that already has a plant keeps it, whatever the new outcome.
+  `child_word.planted_week_id` remembers the week; its study month is the plant's bed. V10 plants the
+  already learned words the same way.
+- **Review sessions.** A `REVIEW` training session belongs to the child, not to a week
+  (`training_session.week_id` null, `child_id` set); `review_word` lists its words. Each word is trained
+  with its latest frozen week word (texts, accepted answers, emoji). Reviews never touch week points,
+  the monthly result or `child_word.status`.
+- **API (CHILD only):** `GET /me/garden` (beds with plants, due count, open watering) and
+  `POST /me/garden/reviews` (start or resume watering; 409 when nothing is due). Answers and hints use the
+  usual `/sessions/{id}/...` endpoints.
+- The garden is shown in the child area only; the parent UI does not change.
+- The plant drawings are one SVG component in the frontend bundle (kind x stage), not 40 files: the same
+  cost for any number of words, cached with the bundle.
 
 #### Decisions (2026-11-24)
 

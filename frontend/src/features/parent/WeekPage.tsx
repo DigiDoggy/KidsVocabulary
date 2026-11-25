@@ -15,7 +15,7 @@ import {
   updateWeek,
   weekStats,
 } from '../../api/client';
-import type { Child, Week, WordView } from '../../api/types';
+import type { Child, FillReport, Week, WordView } from '../../api/types';
 import { Card, ErrorMessage, Field, Spinner, useAction } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { weekStarts } from '../../lib/dates';
@@ -76,6 +76,7 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
   const [run, busy, error] = useAction();
   const [busyWordId, setBusyWordId] = useState<number | null>(null);
   const [filling, setFilling] = useState(false);
+  const [fillNote, setFillNote] = useState<string | null>(null);
   const full = week.missing <= 0;
   const topicOk = TOPIC_PATTERN.test(topic);
   const outdated = week.startDate < thisMonday;
@@ -99,7 +100,12 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
 
   async function onFill() {
     setFilling(true);
-    await mutate(() => fillUp(week.id, topic.trim()));
+    setFillNote(null);
+    const next = await run(() => fillUp(week.id, topic.trim()));
+    if (next) {
+      onChange(next);
+      setFillNote(fillMessage(next.fill, t));
+    }
     setFilling(false);
   }
 
@@ -178,6 +184,11 @@ function DraftEditor({ week, child, onChange }: { week: Week; child: Child; onCh
           <button type="button" className="btn btn--primary" disabled={busy || full || !topicOk} onClick={onFill}>
             {filling ? t('week.filling') : full ? t('week.setFull') : t('week.fill', { count: week.missing })}
           </button>
+          {fillNote && (
+            <div className="alert alert--warn" role="status">
+              {fillNote}
+            </div>
+          )}
         </Card>
       </div>
       <div className="action-bar">
@@ -416,6 +427,14 @@ function WordEmojiEditor({
       <ErrorMessage error={error} />
     </form>
   );
+}
+
+/** Why "Fill up" added fewer words than asked, or null when it filled every place. */
+export function fillMessage(fill: FillReport | null | undefined, t: ReturnType<typeof useI18n>['t']) {
+  if (!fill || fill.added >= fill.requested) return null;
+  const vars = { added: fill.added, requested: fill.requested };
+  if (!fill.aiAvailable) return t(fill.added === 0 ? 'week.fillNoneAiDown' : 'week.fillShortAiDown', vars);
+  return t(fill.added === 0 ? 'week.fillNone' : 'week.fillShort', vars);
 }
 
 const CUSTOM_TOPIC = '__custom__';

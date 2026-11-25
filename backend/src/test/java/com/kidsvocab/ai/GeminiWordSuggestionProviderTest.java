@@ -49,6 +49,9 @@ class GeminiWordSuggestionProviderTest {
                 .andExpect(header("x-goog-api-key", "secret"))
                 .andExpect(jsonPath("$.generationConfig.responseMimeType").value("application/json"))
                 .andExpect(jsonPath("$.generationConfig.responseSchema.properties.words.type").value("ARRAY"))
+                .andExpect(jsonPath("$.generationConfig.maxOutputTokens").value(GeminiWordSuggestionProvider.MAX_OUTPUT_TOKENS))
+                .andExpect(jsonPath("$.generationConfig.responseSchema.properties.words.items.properties.topic").doesNotExist())
+                .andExpect(jsonPath("$.generationConfig.responseSchema.properties.words.items.properties.english").doesNotExist())
                 .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(
                         org.hamcrest.Matchers.containsString("Reply with JSON only")))
                 .andExpect(jsonPath("$.contents[0].parts[0].text").value(org.hamcrest.Matchers.allOf(
@@ -57,13 +60,35 @@ class GeminiWordSuggestionProviderTest {
                         org.hamcrest.Matchers.containsString("Topic: food"),
                         org.hamcrest.Matchers.containsString("Do not suggest these English words: apple"))))
                 .andRespond(withSuccess(geminiAnswer(
-                        "{\\\"words\\\": [{\\\"source\\\": \\\"leib\\\", \\\"target\\\": \\\"bread\\\", \\\"topic\\\": \\\"food\\\"}]}"),
+                        "{\\\"words\\\": [{\\\"source\\\": \\\"leib\\\", \\\"target\\\": \\\"bread\\\"}]}"),
                         MediaType.APPLICATION_JSON));
 
         List<SuggestedWord> words = provider.suggest(REQUEST);
 
-        assertThat(words).containsExactly(new SuggestedWord("leib", "bread", "food"));
+        assertThat(words).as("topic and English meaning come from the request")
+                .containsExactly(new SuggestedWord("leib", "bread", "food", "bread"));
         assertThat(provider.id()).isEqualTo("gemini");
+        server.verify();
+    }
+
+    @Test
+    void asksForTopicAndEnglishMeaningOnlyWhenTheRequestDoesNotGiveThem() {
+        SuggestionRequest open = new SuggestionRequest(8, Level.A1, null, List.of("animals", "food"), 3,
+                "et", "de", Set.of());
+        server.expect(requestTo(URL))
+                .andExpect(jsonPath("$.generationConfig.responseSchema.properties.words.items.properties.topic.type")
+                        .value("STRING"))
+                .andExpect(jsonPath("$.generationConfig.responseSchema.properties.words.items.properties.english.type")
+                        .value("STRING"))
+                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("\"topic\" is one of the topics"),
+                        org.hamcrest.Matchers.containsString("\"english\" is the English word"))))
+                .andRespond(withSuccess(geminiAnswer(
+                        "{\\\"words\\\": [{\\\"source\\\": \\\"koer\\\", \\\"target\\\": \\\"Hund\\\"}]}"),
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(provider.suggest(open)).as("nothing is made up when the model leaves them out")
+                .containsExactly(new SuggestedWord("koer", "Hund", null, null));
         server.verify();
     }
 

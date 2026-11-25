@@ -1,5 +1,6 @@
 package com.kidsvocab.web.week;
 
+import com.kidsvocab.app.week.WeekService.FillReport;
 import com.kidsvocab.app.week.WeekService.WeekDetails;
 import com.kidsvocab.domain.study.StudyWeek;
 import com.kidsvocab.domain.study.WeekStatus;
@@ -72,13 +73,18 @@ public final class WeekDtos {
 
     public record WeekResponse(long id, long childId, LocalDate startDate, LocalDate endDate, WeekStatus status,
                                Integer weekIndex, int wordCount, int missing, BigDecimal points,
-                               BigDecimal maxPoints, List<WordView> words) {
+                               BigDecimal maxPoints, List<WordView> words, FillReport fill) {
 
         static WeekResponse of(WeekDetails d) {
+            return of(d, null);
+        }
+
+        /** @param fill what "Fill up" achieved; {@code null} for every other action */
+        static WeekResponse of(WeekDetails d, FillReport fill) {
             StudyWeek w = d.week();
             return new WeekResponse(w.getId(), w.getChildId(), w.getStartDate(), w.getEndDate(), w.getStatus(),
                     w.getWeekIndex(), w.getWordCount(), d.missing(), w.getPoints(), w.getMaxPoints(),
-                    d.words().stream().map(WordView::of).toList());
+                    d.words().stream().map(WordView::of).toList(), fill);
         }
     }
 }
